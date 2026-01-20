@@ -350,46 +350,42 @@ export default function Header() {
                 </div>
 
                 {/* DESKTOP MENU (Hidden on Mobile) */}
-                <div className="hidden md:block border-t border-gray-100 bg-[#fffaf4]">
+                <div className="hidden md:block border-t border-gray-100 bg-[#fffaf4] relative">
                     <div className="container mx-auto px-4">
-                        <nav className="flex items-center justify-center gap-4 lg:gap-8 xl:gap-12 overflow-x-auto scrollbar-hide relative">
+                        <nav className="flex items-center justify-center gap-4 lg:gap-8 xl:gap-12">
                             {menuItems.map((item) => (
-                                <div key={item.id} className="relative group py-4 flex-shrink-0">
+                                <div key={item.id} className="relative group">
                                     <Link
                                         to={`/kategori/${item.slug}`}
-                                        className="text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider flex items-center gap-1"
+                                        className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider flex items-center gap-1"
                                     >
                                         {item.name.toUpperCase()}
                                         {item.children.length > 0 && <ChevronDown className="w-3 h-3" />}
                                     </Link>
-                                    {/* Dropdown Logic */}
+                                    {/* Dropdown - Referans sitedeki gibi */}
                                     {item.children.length > 0 && (
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 w-48 bg-white shadow-xl rounded-lg py-2 border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-[100]">
+                                        <div className="absolute top-full left-0 min-w-[220px] bg-white shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-[9999]" style={{ marginTop: '0px' }}>
                                             {item.children.map((child: any) => (
                                                 <Link
                                                     key={child.id}
                                                     to={`/kategori/${child.slug}`}
-                                                    className="block px-4 py-2 text-sm text-gray-600 hover:bg-[#fffaf4] hover:text-[#f0c961] transition-colors text-left"
+                                                    className="block px-5 py-3 text-sm text-gray-700 hover:text-[#f0c961] hover:bg-[#fffaf4] transition-colors whitespace-nowrap border-b border-gray-50 last:border-0"
                                                 >
                                                     {child.name}
                                                 </Link>
                                             ))}
                                         </div>
                                     )}
-                                    <span className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0 h-[3px] bg-[#f0c961] rounded-t-full transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100"></span>
                                 </div>
                             ))}
-                            <Link to="/bayi-basvuru" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider relative group flex-shrink-0">
+                            <Link to="/bayi-basvuru" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider">
                                 BAYİLİK BAŞVURUSU
-                                <span className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0 h-[3px] bg-[#f0c961] rounded-t-full transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100"></span>
                             </Link>
-                            <Link to="/hakkimizda" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider relative group flex-shrink-0">
+                            <Link to="/hakkimizda" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider">
                                 HAKKIMIZDA
-                                <span className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0 h-[3px] bg-[#f0c961] rounded-t-full transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100"></span>
                             </Link>
-                            <Link to="/iletisim" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider relative group flex-shrink-0">
+                            <Link to="/iletisim" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider">
                                 İLETİŞİM
-                                <span className="absolute bottom-4 left-1/2 -translate-x-1/2 w-0 h-[3px] bg-[#f0c961] rounded-t-full transition-all duration-300 group-hover:w-full opacity-0 group-hover:opacity-100"></span>
                             </Link>
                         </nav>
                     </div>

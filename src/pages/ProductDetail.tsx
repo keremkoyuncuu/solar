@@ -285,18 +285,45 @@ const ProductDetail: React.FC = () => {
 
                         {/* Sol: Ürün Görseli */}
                         <div className="w-full lg:w-2/5 flex flex-col gap-4">
-                            <div className="w-full bg-[#fdfcf8] rounded-2xl aspect-square flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm">
+                            {/* Zoom Container */}
+                            <div
+                                className="w-full bg-[#fdfcf8] rounded-2xl aspect-square flex items-center justify-center border border-gray-100 overflow-hidden shadow-sm relative group cursor-zoom-in"
+                                onMouseMove={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = ((e.clientX - rect.left) / rect.width) * 100;
+                                    const y = ((e.clientY - rect.top) / rect.height) * 100;
+                                    const img = e.currentTarget.querySelector('img');
+                                    if (img) {
+                                        img.style.transformOrigin = `${x}% ${y}%`;
+                                    }
+                                }}
+                                onMouseEnter={(e) => {
+                                    const img = e.currentTarget.querySelector('img');
+                                    if (img) img.style.transform = 'scale(2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    const img = e.currentTarget.querySelector('img');
+                                    if (img) {
+                                        img.style.transform = 'scale(1)';
+                                        img.style.transformOrigin = 'center center';
+                                    }
+                                }}
+                            >
                                 {activeImage ? (
                                     <img
                                         src={activeImage}
                                         alt={product.name}
                                         width={600}
                                         height={600}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-cover transition-transform duration-200 ease-out"
                                     />
                                 ) : (
                                     <span className="text-9xl drop-shadow-xl filter grayscale opacity-80">📦</span>
                                 )}
+                                {/* Zoom Hint */}
+                                <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    🔍 Yakınlaştırmak için fareyi hareket ettirin
+                                </div>
                             </div>
 
                             {/* Thumbnail Gallery */}

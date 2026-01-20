@@ -16,6 +16,9 @@ interface CartItem {
         sku?: string;
     };
     unitPrice?: number;
+    originalPrice?: number;
+    hasDiscount?: boolean;
+    discountPercentage?: number;
     lineTotal?: number;
 }
 
@@ -73,7 +76,10 @@ const CartPage: React.FC = () => {
                     product_variants (
                         id, 
                         name, 
-                        base_price, 
+                        base_price,
+                        discount_percentage,
+                        discount_start_date,
+                        discount_end_date,
                         products (
                             name, 
                             slug,
@@ -91,15 +97,31 @@ const CartPage: React.FC = () => {
             if (itemsData) {
                 // Rol Çekme ve Fiyat Hesaplama
                 const userRole = await fetchUserRole();
+                const now = new Date();
 
                 const itemsWithPrices = await Promise.all(
                     itemsData.map(async (item: any) => {
                         const variant = item.product_variants;
-                        const unitPrice = await calculateVariantPrice(variant.id, variant.base_price, userRole);
+
+                        // Önce B2B fiyatını hesapla
+                        let basePrice = await calculateVariantPrice(variant.id, variant.base_price, userRole);
+
+                        // İndirim aktif mi kontrol et
+                        const discountActive = (variant.discount_percentage || 0) > 0 &&
+                            (!variant.discount_start_date || new Date(variant.discount_start_date) <= now) &&
+                            (!variant.discount_end_date || new Date(variant.discount_end_date) >= now);
+
+                        // İndirimli fiyatı hesapla
+                        const unitPrice = discountActive
+                            ? basePrice * (1 - variant.discount_percentage / 100)
+                            : basePrice;
 
                         return {
                             ...item,
                             unitPrice,
+                            originalPrice: discountActive ? basePrice : undefined,
+                            hasDiscount: discountActive,
+                            discountPercentage: discountActive ? variant.discount_percentage : 0,
                             lineTotal: unitPrice * item.quantity
                         } as CartItem;
                     })
@@ -302,10 +324,19 @@ const CartPage: React.FC = () => {
 
                                                 {/* Price */}
                                                 <div className="text-center sm:text-right min-w-[120px]">
-                                                    <div className="font-bold text-xl text-[#1a1a1a]">
+                                                    {item.hasDiscount && item.originalPrice && (
+                                                        <div className="flex items-center justify-end gap-2 mb-1">
+                                                            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                                                %{item.discountPercentage}
+                                                            </span>
+                                                            <span className="text-sm text-gray-400 line-through decoration-red-500">
+                                                                {formatPrice(item.originalPrice * item.quantity)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <div className={`font-bold text-xl ${item.hasDiscount ? 'text-red-600' : 'text-[#1a1a1a]'}`}>
                                                         {formatPrice(item.lineTotal || 0)}
                                                     </div>
-
                                                 </div>
 
                                                 {/* Delete */}
