@@ -1,10 +1,38 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Home, Phone, Mail } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
 
 const PaymentSuccess: React.FC = () => {
     const { orderNo } = useParams<{ orderNo: string }>();
     const navigate = useNavigate();
+
+    // Success sayfasına ulaşıldığında sipariş durumunu güncelle
+    useEffect(() => {
+        const updateOrderStatus = async () => {
+            if (!orderNo) return;
+
+            try {
+                // Sipariş durumunu güncelle
+                const { error } = await supabase
+                    .from('orders')
+                    .update({
+                        status: 'approved'
+                    })
+                    .eq('order_no', orderNo);
+
+                if (error) {
+                    console.error('Order update error:', error);
+                } else {
+                    console.log('Order status updated successfully');
+                }
+            } catch (err) {
+                console.error('Error updating order:', err);
+            }
+        };
+
+        updateOrderStatus();
+    }, [orderNo]);
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">

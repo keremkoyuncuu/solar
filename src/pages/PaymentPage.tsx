@@ -76,13 +76,14 @@ const PaymentPage: React.FC = () => {
     };
 
     const handlePayment = async () => {
-        setFormError(null); // Clear previous errors
+        setFormError(null);
 
+        // Validasyonlar
         if (!cardName || cardName.length < 5) {
             setFormError('Lütfen kart üzerindeki isim bilgisini eksiksiz giriniz.');
             return;
         }
-        if (!cardNumber || cardNumber.length < 19) { // 16 digits + 3 spaces
+        if (!cardNumber || cardNumber.length < 19) {
             setFormError('Lütfen geçerli bir kart numarası giriniz.');
             return;
         }
@@ -101,24 +102,49 @@ const PaymentPage: React.FC = () => {
 
         setProcessing(true);
 
-        // Simüle edilmiş ödeme işlemi (gerçek entegrasyon için backend gerekir)
-        setTimeout(async () => {
-            try {
-                // Update order status to 'approved'
-                await supabase
-                    .from('orders')
-                    .update({ status: 'approved' })
-                    .eq('id', orderId);
+        try {
+            // Garanti 3D Secure başlat
+            const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-initiate`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        cardNumber: cardNumber,
+                        cardExpiry: cardExpiry,
+                        cardCvc: cardCvc,
+                        cardHolderName: cardName
+                    })
+                }
+            );
 
-                // Navigate to success page
-                navigate(`/payment/success/${order?.order_no}`);
-            } catch (error) {
-                console.error('Payment error:', error);
-                setFormError('Ödeme işlemi sırasında bir hata oluştu.');
-            } finally {
-                setProcessing(false);
+            const data = await response.json();
+
+            if (!response.ok || data.error) {
+                throw new Error(data.error || 'Ödeme başlatılamadı');
             }
-        }, 2000);
+
+            // 3D Secure sayfasına yönlendir
+            if (data.formHtml) {
+                // Yeni pencerede 3D Secure formunu aç
+                const newWindow = window.open('', '_self');
+                if (newWindow) {
+                    newWindow.document.write(data.formHtml);
+                    newWindow.document.close();
+                }
+            } else if (data.redirectUrl) {
+                window.location.href = data.redirectUrl;
+            }
+
+        } catch (error: any) {
+            console.error('Payment error:', error);
+            setFormError(error.message || 'Ödeme işlemi sırasında bir hata oluştu.');
+            setProcessing(false);
+        }
     };
 
     if (loading) {
@@ -190,7 +216,7 @@ const PaymentPage: React.FC = () => {
                                     <div className="w-10 h-6 bg-white rounded text-blue-800 text-[8px] flex items-center justify-center font-bold border border-gray-200">TROY</div>
                                 </div>
                                 <div className="text-sm text-gray-600">
-                                    Denizbank Sanal POS güvencesi ile tüm kredi kartları ile güvenli ödeme yapabilirsiniz.
+                                    Garanti BBVA Sanal POS güvencesi ile tüm kredi kartları ile güvenli ödeme yapabilirsiniz.
                                 </div>
                             </div>
 

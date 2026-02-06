@@ -33,6 +33,8 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import UpdatePassword from './pages/auth/UpdatePassword';
 import PaymentPage from './pages/PaymentPage';
 import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailed from './pages/PaymentFailed';
+import PaymentCallback from './pages/PaymentCallback';
 import './lib/supabaseClient';
 
 
@@ -63,6 +65,8 @@ function MainLayout() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/payment/:orderId" element={<PaymentPage />} />
           <Route path="/payment/success/:orderNo" element={<PaymentSuccess />} />
+          <Route path="/payment/fail" element={<PaymentFailed />} />
+          <Route path="/payment/callback" element={<PaymentCallback />} />
 
           {/* Dinamik Yasal Sayfalar */}
           <Route path="/kurumsal/:slug" element={<LegalPage />} />
