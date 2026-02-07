@@ -20,47 +20,90 @@ const MODE = Deno.env.get("GARANTI_MODE") || "TEST";
 
 // URLs
 const GARANTI_3D_URL = MODE === "PROD"
-    ? "https://sanalposprov.garantibbva.com.tr/servlet/gt3dengine"
-    : "https://sanalposprovtest.garantibbva.com.tr/servlet/gt3dengine";
+    ? "https://sanalposprov.garanti.com.tr/servlet/gt3dengine"
+    : "https://sanalposprovtest.garanti.com.tr/servlet/gt3dengine";
 
 const SUCCESS_URL = Deno.env.get("PAYMENT_SUCCESS_URL") || "https://icelsolarmarket.com/payment/callback";
 const FAIL_URL = Deno.env.get("PAYMENT_FAIL_URL") || "https://icelsolarmarket.com/payment/callback";
 
-// SHA-512 Hash oluşturma
-async function createSecurityHash(
-    terminalId: string,
-    orderId: string,
-    amount: string,
-    securityData: string
-): Promise<string> {
-    // SecurityData = SHA512(Password + "0" + TerminalID)
+// Garanti Resmi Dokümantasyonuna Göre Hash Algoritması
+// HashedPassword = SHA1(Password + "0" + TerminalID).toUpperCase()
+// HashData = SHA512(TerminalID + OrderID + Amount + CurrencyCode + SuccessURL + ErrorURL + Type + InstallmentCount + StoreKey + HashedPassword).toUpperCase()
+
+// SHA1 Hash (HashedPassword için)
+async function sha1Hash(text: string): Promise<string> {
     const encoder = new TextEncoder();
-
-    // Hash data: TerminalID + OrderID + Amount + SuccessURL + FailURL + ... + SecurityData
-    const hashString = terminalId + orderId + amount + SUCCESS_URL + FAIL_URL +
-        "" + "" + "" + securityData;
-
     const hashBuffer = await crypto.subtle.digest(
-        "SHA-512",
-        encoder.encode(hashString)
-    );
-
-    return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
-}
-
-async function createSecurityData(password: string, terminalId: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = password + "0" + terminalId;
-
-    const hashBuffer = await crypto.subtle.digest(
-        "SHA-512",
-        encoder.encode(data)
+        "SHA-1",
+        encoder.encode(text)
     );
 
     return Array.from(new Uint8Array(hashBuffer))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
         .toUpperCase();
+}
+
+// SHA512 Hash (Final HashData için)
+async function sha512Hash(text: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const hashBuffer = await crypto.subtle.digest(
+        "SHA-512",
+        encoder.encode(text)
+    );
+
+    return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('')
+        .toUpperCase();
+}
+
+// HashedPassword oluştur - SHA1(Password + "0" + TerminalID)
+async function createHashedPassword(password: string, terminalId: string): Promise<string> {
+    const data = password + "0" + terminalId;
+    console.log("HashedPassword Input:", data);
+
+    const result = await sha1Hash(data);
+    console.log("HashedPassword Result (SHA1):", result);
+    return result;
+}
+
+// Final Hash oluştur - Garanti Format
+// SHA512(TerminalID + OrderID + Amount + CurrencyCode + SuccessURL + ErrorURL + Type + InstallmentCount + StoreKey + HashedPassword)
+async function createHashData(
+    terminalId: string,
+    orderId: string,
+    amount: string,
+    currencyCode: string,
+    successUrl: string,
+    errorUrl: string,
+    txnType: string,
+    installmentCount: string,
+    storeKey: string,
+    hashedPassword: string
+): Promise<string> {
+    // Garanti Resmi Format: TerminalID + OrderID + Amount + CurrencyCode + SuccessURL + ErrorURL + Type + InstallmentCount + StoreKey + HashedPassword
+    const hashString = terminalId + orderId + amount + currencyCode + successUrl + errorUrl +
+        txnType + installmentCount + storeKey + hashedPassword;
+
+    console.log("=== HASH DATA DEBUG ===");
+    console.log("TerminalID:", terminalId);
+    console.log("OrderID:", orderId);
+    console.log("Amount:", amount);
+    console.log("CurrencyCode:", currencyCode);
+    console.log("SuccessURL:", successUrl);
+    console.log("ErrorURL:", errorUrl);
+    console.log("TxnType:", txnType);
+    console.log("InstallmentCount:", installmentCount);
+    console.log("StoreKey:", storeKey);
+    console.log("StoreKey Length:", storeKey?.length || 0);
+    console.log("HashedPassword:", hashedPassword);
+    console.log("Full HashData String:", hashString);
+    console.log("=== END DEBUG ===");
+
+    const result = await sha512Hash(hashString);
+    console.log("HashData Result (SHA512 - UPPERCASE HEX):", result);
+    return result;
 }
 
 serve(async (req) => {
@@ -106,16 +149,40 @@ serve(async (req) => {
         const cardNumberClean = cardNumber.replace(/\s/g, "");
         const cardLast4 = cardNumberClean.slice(-4);
 
-        // Security data oluştur
-        const securityData = await createSecurityData(PROV_PASSWORD, TERMINAL_ID);
+        // Transaction ID için geçici değer (henüz oluşturulmadı)
+        const tempTxId = crypto.randomUUID();
 
-        // Hash oluştur
-        const hash = await createSecurityHash(TERMINAL_ID, order.order_no, amount, securityData);
+        // URL'ler - hem hash hem form için AYNI (Garanti eşleşme bekler)
+        const successUrl = SUCCESS_URL + `?txid=${tempTxId}`;
+        const errorUrl = FAIL_URL + `?txid=${tempTxId}`;
+
+        const txnType = "sales";
+        const installmentCount = "";
+        const currencyCode = "949"; // TRY
+
+        // HashedPassword oluştur - SHA1(Password + "0" + TerminalID)
+        const hashedPassword = await createHashedPassword(PROV_PASSWORD, TERMINAL_ID);
+
+        // HashData oluştur - SHA512 (Garanti Resmi Format)
+        // Hash ve Form için AYNI URL'ler kullanılıyor
+        const hash = await createHashData(
+            TERMINAL_ID,
+            order.order_no,
+            amount,
+            currencyCode,
+            successUrl,  // Form ile aynı URL
+            errorUrl,    // Form ile aynı URL
+            txnType,
+            installmentCount,
+            STORE_KEY,
+            hashedPassword
+        );
 
         // Payment transaction kaydı oluştur
         const { data: transaction, error: txError } = await supabaseClient
             .from("payment_transactions")
             .insert({
+                id: tempTxId,
                 order_id: orderId,
                 amount: order.grand_total,
                 currency: "TRY",
@@ -149,10 +216,10 @@ serve(async (req) => {
             terminaluserid: TERMINAL_ID,
             terminalmerchantid: MERCHANT_ID,
             terminalid: TERMINAL_ID,
-            txntype: "sales",
+            txntype: txnType,
             txnamount: amount,
             txncurrencycode: "949", // TRY
-            txninstallmentcount: "", // Tek çekim
+            txninstallmentcount: installmentCount,
             orderid: order.order_no,
             customeremailaddress: "",
             customeripaddress: req.headers.get("x-forwarded-for") || "127.0.0.1",
@@ -161,8 +228,8 @@ serve(async (req) => {
             cardexpiredatemonth: expMonth.padStart(2, "0"),
             cardexpiredateyear: expYear.length === 2 ? "20" + expYear : expYear,
             cardcvv2: cardCvc,
-            successurl: SUCCESS_URL + `?txid=${transaction.id}`,
-            errorurl: FAIL_URL + `?txid=${transaction.id}`,
+            successurl: successUrl,
+            errorurl: errorUrl,
             secure3dhash: hash,
             storekey: STORE_KEY
         };

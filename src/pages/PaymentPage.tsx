@@ -75,6 +75,30 @@ const PaymentPage: React.FC = () => {
         }
     };
 
+    // 3D Secure form state
+    const [formHtml, setFormHtml] = useState<string | null>(null);
+
+    // Form HTML geldiğinde auto-submit yap
+    useEffect(() => {
+        if (formHtml) {
+            // Form container'ı bul ve form'u submit et
+            const container = document.getElementById('payment-form-container');
+            if (container) {
+                // HTML'i yerleştir
+                container.innerHTML = formHtml;
+
+                // Form'u bul ve submit et
+                const form = container.querySelector('form');
+                if (form) {
+                    // Küçük bir gecikme ile submit et (DOM'un hazır olmasını bekle)
+                    setTimeout(() => {
+                        form.submit();
+                    }, 100);
+                }
+            }
+        }
+    }, [formHtml]);
+
     const handlePayment = async () => {
         setFormError(null);
 
@@ -128,14 +152,9 @@ const PaymentPage: React.FC = () => {
                 throw new Error(data.error || 'Ödeme başlatılamadı');
             }
 
-            // 3D Secure sayfasına yönlendir
+            // 3D Secure formunu state'e kaydet - useEffect auto-submit yapacak
             if (data.formHtml) {
-                // Yeni pencerede 3D Secure formunu aç
-                const newWindow = window.open('', '_self');
-                if (newWindow) {
-                    newWindow.document.write(data.formHtml);
-                    newWindow.document.close();
-                }
+                setFormHtml(data.formHtml);
             } else if (data.redirectUrl) {
                 window.location.href = data.redirectUrl;
             }
@@ -169,6 +188,20 @@ const PaymentPage: React.FC = () => {
     }
 
     // Prices are VAT-INCLUSIVE (already included in grand_total)
+
+    // Eğer 3D Secure form HTML varsa, sadece onu göster
+    if (formHtml) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin h-12 w-12 border-4 border-[#6D4C41] rounded-full border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-gray-600">3D Secure sayfasına yönlendiriliyorsunuz...</p>
+                </div>
+                {/* Hidden form container - useEffect bu container'a form yerleştirecek ve submit edecek */}
+                <div id="payment-form-container" style={{ display: 'none' }}></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
