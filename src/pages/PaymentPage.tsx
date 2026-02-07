@@ -75,29 +75,33 @@ const PaymentPage: React.FC = () => {
         }
     };
 
-    // 3D Secure form state
-    const [formHtml, setFormHtml] = useState<string | null>(null);
+    // 3D Secure form data state
+    const [formData, setFormData] = useState<any>(null);
+    const [redirectUrl, setRedirectUrl] = useState<string>('');
 
-    // Form HTML geldiğinde auto-submit yap
+    // Form data geldiğinde formu oluşturup submit et
     useEffect(() => {
-        if (formHtml) {
-            // Form container'ı bul ve form'u submit et
-            const container = document.getElementById('payment-form-container');
-            if (container) {
-                // HTML'i yerleştir
-                container.innerHTML = formHtml;
+        if (formData && redirectUrl) {
+            // Dinamik olarak form oluştur ve submit et
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = redirectUrl;
+            form.style.display = 'none';
 
-                // Form'u bul ve submit et
-                const form = container.querySelector('form');
-                if (form) {
-                    // Küçük bir gecikme ile submit et (DOM'un hazır olmasını bekle)
-                    setTimeout(() => {
-                        form.submit();
-                    }, 100);
-                }
-            }
+            // Form alanlarını ekle
+            Object.entries(formData).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = String(value);
+                form.appendChild(input);
+            });
+
+            // Formu body'ye ekle ve submit et
+            document.body.appendChild(form);
+            form.submit();
         }
-    }, [formHtml]);
+    }, [formData, redirectUrl]);
 
     const handlePayment = async () => {
         setFormError(null);
@@ -152,9 +156,10 @@ const PaymentPage: React.FC = () => {
                 throw new Error(data.error || 'Ödeme başlatılamadı');
             }
 
-            // 3D Secure formunu state'e kaydet - useEffect auto-submit yapacak
-            if (data.formHtml) {
-                setFormHtml(data.formHtml);
+            // 3D Secure formu - useEffect auto-submit yapacak
+            if (data.formData && data.redirectUrl) {
+                setFormData(data.formData);
+                setRedirectUrl(data.redirectUrl);
             } else if (data.redirectUrl) {
                 window.location.href = data.redirectUrl;
             }
@@ -189,16 +194,14 @@ const PaymentPage: React.FC = () => {
 
     // Prices are VAT-INCLUSIVE (already included in grand_total)
 
-    // Eğer 3D Secure form HTML varsa, sadece onu göster
-    if (formHtml) {
+    // Eğer 3D Secure form submit ediliyorsa, loading göster
+    if (formData && redirectUrl) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin h-12 w-12 border-4 border-[#6D4C41] rounded-full border-t-transparent mx-auto mb-4"></div>
                     <p className="text-gray-600">3D Secure sayfasına yönlendiriliyorsunuz...</p>
                 </div>
-                {/* Hidden form container - useEffect bu container'a form yerleştirecek ve submit edecek */}
-                <div id="payment-form-container" style={{ display: 'none' }}></div>
             </div>
         );
     }
