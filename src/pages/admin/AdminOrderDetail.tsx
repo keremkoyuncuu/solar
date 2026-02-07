@@ -6,10 +6,22 @@ import { formatOrderStatus, formatDate, formatCurrency } from '../../utils/forma
 interface OrderDetail {
     id: string;
     order_no: string;
-    user_id: string; // Updated from profile_id if it existed, or added new
+    user_id: string;
     grand_total: number;
     status: string;
     created_at: string;
+    // Guest sipariş bilgileri
+    guest_name?: string;
+    guest_email?: string;
+    guest_phone?: string;
+    // Teslimat adresi (JSON)
+    shipping_address?: {
+        full_name?: string;
+        phone?: string;
+        city?: string;
+        district?: string;
+        address_line?: string;
+    };
     profiles: {
         email: string;
         role: string;
@@ -43,6 +55,7 @@ const AdminOrderDetail: React.FC = () => {
                     .from('orders')
                     .select(`
                         id, order_no, user_id, grand_total, status, created_at,
+                        guest_name, guest_email, guest_phone, shipping_address,
                         profiles:user_id ( email, role, phone, full_name ),
                         order_items ( id, product_name_snapshot, sku_snapshot, unit_price_snapshot, quantity, line_total )
                     `)
@@ -206,37 +219,98 @@ const AdminOrderDetail: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Sidebar: Customer Info */}
+                        {/* Sidebar: Customer Info & Address */}
                         <div className="space-y-6">
+                            {/* Müşteri Bilgileri */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <h3 className="font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">Müşteri Bilgileri</h3>
-                                <div className="space-y-3 text-sm">
+                                <h3 className="font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    Müşteri Bilgileri
+                                </h3>
+                                <div className="space-y-4 text-sm">
+                                    {/* İsim */}
                                     <div>
-                                        <span className="block text-gray-500 text-xs">Email</span>
-                                        <div className="font-medium">{order.profiles?.email}</div>
+                                        <span className="block text-gray-500 text-xs uppercase tracking-wide mb-1">Ad Soyad</span>
+                                        <div className="font-medium text-gray-900">
+                                            {order.shipping_address?.full_name || order.guest_name || order.profiles?.full_name || '-'}
+                                        </div>
                                     </div>
+                                    {/* Email */}
                                     <div>
-                                        <span className="block text-gray-500 text-xs mb-1">Rol</span>
+                                        <span className="block text-gray-500 text-xs uppercase tracking-wide mb-1">E-posta</span>
+                                        <div className="font-medium text-gray-900">
+                                            {order.guest_email || order.profiles?.email || '-'}
+                                        </div>
+                                    </div>
+                                    {/* Telefon */}
+                                    <div>
+                                        <span className="block text-gray-500 text-xs uppercase tracking-wide mb-1">Telefon</span>
+                                        <div className="font-medium text-gray-900">
+                                            {order.shipping_address?.phone || order.guest_phone || order.profiles?.phone || '-'}
+                                        </div>
+                                    </div>
+                                    {/* Hesap Tipi */}
+                                    <div>
+                                        <span className="block text-gray-500 text-xs uppercase tracking-wide mb-1">Hesap Tipi</span>
                                         <div className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
-                                            {order.profiles?.role || 'Müşteri'}
+                                            {order.user_id ? (order.profiles?.role || 'Üye') : 'Misafir'}
                                         </div>
                                     </div>
-                                    {order.profiles?.phone && (
-                                        <div>
-                                            <span className="block text-gray-500 text-xs">Telefon</span>
-                                            <div className="font-medium">{order.profiles.phone}</div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
-                            {/* Optional: Shipping Address Placeholder if exists in schema later */}
-                            {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                            <h3 className="font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">Teslimat Adresi</h3>
-                            <div className="text-sm text-gray-600">
-                                Adres verisi 'addresses' tablosundan çekilebilir veya snapshot alınabilir.
+                            {/* Teslimat Adresi */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h3 className="font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    Teslimat Adresi
+                                </h3>
+                                {order.shipping_address ? (
+                                    <div className="text-sm text-gray-700 space-y-2">
+                                        <div className="font-medium text-gray-900">{order.shipping_address.full_name}</div>
+                                        <div>{order.shipping_address.address_line}</div>
+                                        <div>{order.shipping_address.district} / {order.shipping_address.city}</div>
+                                        {order.shipping_address.phone && (
+                                            <div className="text-gray-500 pt-2 border-t border-gray-100">
+                                                📞 {order.shipping_address.phone}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="text-sm text-gray-400 italic">Adres bilgisi bulunamadı</div>
+                                )}
                             </div>
-                        </div> */}
+
+                            {/* Sipariş Özeti */}
+                            <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl shadow-sm border border-amber-200 p-6">
+                                <h3 className="font-semibold text-amber-900 mb-4 pb-2 border-b border-amber-200 flex items-center gap-2">
+                                    <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    Sipariş Özeti
+                                </h3>
+                                <div className="space-y-3 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-amber-700">Ürün Sayısı</span>
+                                        <span className="font-medium text-amber-900">{order.order_items.length} adet</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-amber-700">Toplam Adet</span>
+                                        <span className="font-medium text-amber-900">
+                                            {order.order_items.reduce((acc, item) => acc + item.quantity, 0)} adet
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between pt-3 border-t border-amber-200">
+                                        <span className="font-bold text-amber-900">Genel Toplam</span>
+                                        <span className="font-bold text-lg text-amber-900">{formatCurrency(order.grand_total)}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

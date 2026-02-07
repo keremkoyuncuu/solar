@@ -208,7 +208,14 @@ serve(async (req) => {
             );
         }
 
-        // 3D Secure form verilerini hazırla
+        // 3D Secure form verilerini hazırla - Resmi Garanti Format
+        const txnTimestamp = new Date().toISOString(); // UTC zaman
+
+        // IP adresi - x-forwarded-for birden fazla IP içerebilir, sadece ilkini al
+        const forwardedFor = req.headers.get("x-forwarded-for") || "";
+        const clientIp = forwardedFor.split(",")[0].trim() || "127.0.0.1";
+        console.log("Client IP:", clientIp);
+
         const formData = {
             mode: MODE,
             apiversion: "512",
@@ -216,22 +223,26 @@ serve(async (req) => {
             terminaluserid: TERMINAL_ID,
             terminalmerchantid: MERCHANT_ID,
             terminalid: TERMINAL_ID,
-            txntype: txnType,
-            txnamount: amount,
-            txncurrencycode: "949", // TRY
-            txninstallmentcount: installmentCount,
             orderid: order.order_no,
-            customeremailaddress: "",
-            customeripaddress: req.headers.get("x-forwarded-for") || "127.0.0.1",
-            secure3dsecuritylevel: "3D_PAY",
-            cardnumber: cardNumberClean,
-            cardexpiredatemonth: expMonth.padStart(2, "0"),
-            cardexpiredateyear: expYear.length === 2 ? "20" + expYear : expYear,
-            cardcvv2: cardCvc,
             successurl: successUrl,
             errorurl: errorUrl,
+            customeremailaddress: order.guest_email || "",
+            customeripaddress: clientIp,
+            companyname: "ICEL SOLAR MARKET", // Eksik olan alan
+            lang: "tr", // Eksik olan alan
+            txntimestamp: txnTimestamp, // Eksik olan alan
+            refreshtime: "1", // Eksik olan alan
+            secure3dsecuritylevel: "3D_PAY",
             secure3dhash: hash,
-            storekey: STORE_KEY
+            txnamount: amount,
+            txntype: txnType,
+            txncurrencycode: "949", // TRY
+            txninstallmentcount: installmentCount,
+            cardholdername: cardHolderName, // Eksik olan alan
+            cardnumber: cardNumberClean,
+            cardexpiredatemonth: expMonth.padStart(2, "0"),
+            cardexpiredateyear: expYear.length === 2 ? expYear : expYear.slice(-2), // Son 2 haneli yıl
+            cardcvv2: cardCvc
         };
 
         // HTML form döndür (client tarafında auto-submit edilecek)
