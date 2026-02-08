@@ -96,14 +96,37 @@ serve(async (req) => {
                 .eq("id", transaction.order_id)
                 .single();
 
+            // Status güncelle - "approved" yerine "paid" (constraint uyumlu)
             await supabaseClient
                 .from("orders")
                 .update({
-                    status: isPaymentSuccess ? "approved" : "payment_failed",
+                    status: isPaymentSuccess ? "paid" : "pending_payment",
                     payment_status: isPaymentSuccess ? "paid" : "failed",
                     payment_transaction_id: transactionId
                 })
                 .eq("id", transaction.order_id);
+
+            // STOK DÜŞÜMÜ - Sadece ödeme başarılı olduğunda!
+            if (isPaymentSuccess) {
+                // Siparişe ait order_items'ları al
+                const { data: orderItems } = await supabaseClient
+                    .from("order_items")
+                    .select("variant_id, quantity")
+                    .eq("order_id", transaction.order_id);
+
+                if (orderItems && orderItems.length > 0) {
+                    // Her ürün için stok düşür
+                    for (const item of orderItems) {
+                        if (item.variant_id) {
+                            await supabaseClient.rpc('decrement_variant_stock', {
+                                p_variant_id: item.variant_id,
+                                p_quantity: item.quantity
+                            });
+                        }
+                    }
+                    console.log("Stock decremented for order:", transaction.order_id);
+                }
+            }
 
             // Başarılı ise success sayfasına, değilse fail sayfasına yönlendir
             if (isPaymentSuccess && orderData?.order_no) {

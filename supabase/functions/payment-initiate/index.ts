@@ -118,7 +118,7 @@ serve(async (req) => {
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        const { orderId, cardNumber, cardExpiry, cardCvc, cardHolderName } = await req.json();
+        const { orderId, cardNumber, cardExpiry, cardCvc, cardHolderName, installmentCount, totalAmount } = await req.json();
 
         if (!orderId || !cardNumber || !cardExpiry || !cardCvc || !cardHolderName) {
             return new Response(
@@ -127,10 +127,19 @@ serve(async (req) => {
             );
         }
 
+        // Taksit sayısı (1 = tek çekim, 2-12 arası taksit)
+        const txnInstallmentCount = installmentCount && installmentCount > 1 ? String(installmentCount) : "";
+
+        // DEBUG: Gelen değerleri logla
+        console.log("=== INSTALLMENT DEBUG ===");
+        console.log("Raw request body - installmentCount:", installmentCount, "type:", typeof installmentCount);
+        console.log("Raw request body - totalAmount:", totalAmount, "type:", typeof totalAmount);
+        console.log("txnInstallmentCount (to POS):", txnInstallmentCount);
+
         // Sipariş bilgilerini al
         const { data: order, error: orderError } = await supabaseClient
             .from("orders")
-            .select("id, order_no, grand_total")
+            .select("id, order_no, grand_total, guest_email")
             .eq("id", orderId)
             .single();
 
@@ -141,8 +150,17 @@ serve(async (req) => {
             );
         }
 
-        // Tutar (kuruş cinsinden, tam sayı)
-        const amount = Math.round(order.grand_total * 100).toString();
+        // Tutar (kurus cinsinden, tam sayı) - Frontend'den gelen totalAmount kullan (taksit komisyonu dahil)
+        // totalAmount undefined veya 0 ise order.grand_total kullan
+        const rawTotalAmount = totalAmount !== undefined && totalAmount !== null ? Number(totalAmount) : null;
+        const finalAmount = rawTotalAmount && rawTotalAmount > 0 ? rawTotalAmount : order.grand_total;
+        const amount = Math.round(finalAmount * 100).toString();
+
+        console.log("order.grand_total:", order.grand_total);
+        console.log("rawTotalAmount (from request):", rawTotalAmount);
+        console.log("finalAmount (USED FOR PAYMENT):", finalAmount);
+        console.log("amount (in kurus, sent to bank):", amount);
+        console.log("=== END DEBUG ===");
 
         // Kart bilgilerini parse et
         const [expMonth, expYear] = cardExpiry.split("/");
@@ -157,7 +175,6 @@ serve(async (req) => {
         const errorUrl = FAIL_URL + `?txid=${tempTxId}`;
 
         const txnType = "sales";
-        const installmentCount = "";
         const currencyCode = "949"; // TRY
 
         // HashedPassword oluştur - SHA1(Password + "0" + TerminalID)
@@ -173,7 +190,7 @@ serve(async (req) => {
             successUrl,  // Form ile aynı URL
             errorUrl,    // Form ile aynı URL
             txnType,
-            installmentCount,
+            txnInstallmentCount,
             STORE_KEY,
             hashedPassword
         );
@@ -237,7 +254,7 @@ serve(async (req) => {
             txnamount: amount,
             txntype: txnType,
             txncurrencycode: "949", // TRY
-            txninstallmentcount: installmentCount,
+            txninstallmentcount: txnInstallmentCount,
             cardholdername: cardHolderName, // Eksik olan alan
             cardnumber: cardNumberClean,
             cardexpiredatemonth: expMonth.padStart(2, "0"),

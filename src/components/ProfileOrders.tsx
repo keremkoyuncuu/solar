@@ -27,8 +27,9 @@ interface Order {
     order_no?: string;
     user_id: string;
     created_at: string;
-    status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    status: string;
     grand_total: number;
+    tracking_number?: string;
     order_items: OrderItem[];
 }
 
@@ -140,6 +141,19 @@ const ProfileOrders: React.FC<ProfileOrdersProps> = ({ userId }) => {
                                 {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                             </button>
                         </div>
+
+                        {/* Kargo Takip Numarası */}
+                        {order.tracking_number && ['shipped', 'delivered', 'kargolandi', 'teslim_edildi'].includes(order.status) && (
+                            <div className="w-full px-4 pb-4 md:px-6 md:pb-4 bg-gray-50/50">
+                                <div className="flex items-center gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                    <Truck className="w-5 h-5 text-purple-600" />
+                                    <div>
+                                        <span className="text-xs text-purple-600 font-bold block">Kargo Takip No:</span>
+                                        <span className="font-mono font-bold text-purple-800">{order.tracking_number}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Details (Accordion) */}

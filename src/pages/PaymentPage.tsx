@@ -29,9 +29,41 @@ const PaymentPage: React.FC = () => {
     const [cardNumber, setCardNumber] = useState('');
     const [cardExpiry, setCardExpiry] = useState('');
     const [cardCvc, setCardCvc] = useState('');
+    const [selectedInstallment, setSelectedInstallment] = useState(1); // 1 = tek çekim
 
     // UI State
     const [formError, setFormError] = useState<string | null>(null);
+
+    // Taksit oranları (müşteriye yansıtılacak net oranlar)
+    const INSTALLMENT_RATES: Record<number, number> = {
+        1: 0,       // Tek çekim - komisyonsuz
+        2: 2.99,
+        3: 5.01,
+        4: 7.10,
+        5: 9.29,
+        6: 11.57,
+        7: 13.95,
+        8: 16.43,
+        9: 19.02,
+        10: 21.73,
+        11: 24.56,
+        12: 27.53
+    };
+
+    // Toplam tutarı hesapla (komisyon dahil)
+    const calculateTotal = () => {
+        if (!order) return 0;
+        const rate = INSTALLMENT_RATES[selectedInstallment] || 0;
+        return order.grand_total * (1 + rate / 100);
+    };
+
+    // Aylık taksit tutarını hesapla
+    const getMonthlyPayment = (installment: number) => {
+        if (!order) return 0;
+        const rate = INSTALLMENT_RATES[installment] || 0;
+        const total = order.grand_total * (1 + rate / 100);
+        return total / installment;
+    };
 
     useEffect(() => {
         fetchOrderDetails();
@@ -131,6 +163,23 @@ const PaymentPage: React.FC = () => {
         setProcessing(true);
 
         try {
+            // DEBUG: Gönderilen değerleri logla
+            const paymentData = {
+                orderId: orderId,
+                cardNumber: cardNumber,
+                cardExpiry: cardExpiry,
+                cardCvc: cardCvc,
+                cardHolderName: cardName,
+                installmentCount: selectedInstallment,
+                totalAmount: calculateTotal()
+            };
+            console.log("=== PAYMENT DEBUG (Frontend) ===");
+            console.log("selectedInstallment:", selectedInstallment);
+            console.log("order.grand_total:", order?.grand_total);
+            console.log("calculateTotal():", calculateTotal());
+            console.log("Full payload:", paymentData);
+            console.log("=== END DEBUG ===");
+
             // Garanti 3D Secure başlat
             const response = await fetch(
                 `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/payment-initiate`,
@@ -140,13 +189,7 @@ const PaymentPage: React.FC = () => {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
                     },
-                    body: JSON.stringify({
-                        orderId: orderId,
-                        cardNumber: cardNumber,
-                        cardExpiry: cardExpiry,
-                        cardCvc: cardCvc,
-                        cardHolderName: cardName
-                    })
+                    body: JSON.stringify(paymentData)
                 }
             );
 
@@ -333,13 +376,64 @@ const PaymentPage: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* Taksit Seçenekleri (Opsiyonel - Mock) */}
-                                <div className="mt-2">
-                                    <label className="flex items-center gap-2 p-3 border border-[#6D4C41] bg-[#6D4C41]/5 rounded-lg cursor-pointer">
-                                        <input type="radio" name="installment" defaultChecked className="text-[#6D4C41] focus:ring-[#6D4C41]" />
-                                        <span className="text-sm font-bold text-gray-900">Tek Çekim</span>
-                                        <span className="ml-auto text-sm font-bold text-[#6D4C41]">{formatCurrency(order.grand_total)}</span>
-                                    </label>
+                                {/* Taksit Seçenekleri */}
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">Taksit Seçenekleri</label>
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                        {/* Tek Çekim */}
+                                        <label
+                                            className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${selectedInstallment === 1
+                                                ? 'border-[#6D4C41] bg-[#6D4C41]/5 ring-2 ring-[#6D4C41]/20'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                                }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="installment"
+                                                checked={selectedInstallment === 1}
+                                                onChange={() => setSelectedInstallment(1)}
+                                                className="text-[#6D4C41] focus:ring-[#6D4C41]"
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-sm font-bold text-gray-900">Tek Çekim</span>
+                                                <span className="text-xs text-green-600 ml-2">(Komisyonsuz)</span>
+                                            </div>
+                                            <span className="text-sm font-bold text-[#6D4C41]">{formatCurrency(order.grand_total)}</span>
+                                        </label>
+
+                                        {/* Taksitli Seçenekler */}
+                                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((inst) => (
+                                            <label
+                                                key={inst}
+                                                className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${selectedInstallment === inst
+                                                    ? 'border-[#6D4C41] bg-[#6D4C41]/5 ring-2 ring-[#6D4C41]/20'
+                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="installment"
+                                                    checked={selectedInstallment === inst}
+                                                    onChange={() => setSelectedInstallment(inst)}
+                                                    className="text-[#6D4C41] focus:ring-[#6D4C41]"
+                                                />
+                                                <div className="flex-1">
+                                                    <span className="text-sm font-bold text-gray-900">{inst} Taksit</span>
+                                                    <span className="text-xs text-gray-500 ml-2">
+                                                        (Aylık {formatCurrency(getMonthlyPayment(inst))})
+                                                    </span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-sm font-bold text-[#6D4C41]">
+                                                        {formatCurrency(order.grand_total * (1 + INSTALLMENT_RATES[inst] / 100))}
+                                                    </span>
+                                                    <span className="text-xs text-orange-600 block">
+                                                        +%{INSTALLMENT_RATES[inst].toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
