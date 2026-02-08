@@ -691,6 +691,111 @@ const ProductDetail: React.FC = () => {
                                         </div>
                                     </div>
 
+                                    {/* İkinci Satır - 3 Banka Daha */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                                        {/* Axess - Akbank */}
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                            <div className="bg-[#e31e24] text-white text-center py-3">
+                                                <span className="font-bold text-lg">Axess</span>
+                                                <div className="text-xs opacity-80">Akbank</div>
+                                            </div>
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
+                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
+                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {INSTALLMENT_OPTIONS.map((opt) => {
+                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
+                                                        const monthly = total / opt.count;
+                                                        return (
+                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
+                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
+                                                                <td className="py-2 px-3 text-right text-gray-600">
+                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
+                                                                </td>
+                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
+                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* World - Yapı Kredi */}
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                            <div className="bg-gradient-to-r from-[#1a1a6e] to-[#6d28d9] text-white text-center py-3">
+                                                <span className="font-bold text-lg">World</span>
+                                                <div className="text-xs opacity-80">Yapı Kredi</div>
+                                            </div>
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
+                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
+                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {INSTALLMENT_OPTIONS.map((opt) => {
+                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
+                                                        const monthly = total / opt.count;
+                                                        return (
+                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
+                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
+                                                                <td className="py-2 px-3 text-right text-gray-600">
+                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
+                                                                </td>
+                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
+                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Bonus Card - Garanti BBVA */}
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                            <div className="bg-[#00aa4f] text-white text-center py-3">
+                                                <span className="font-bold text-lg">Bonus Card</span>
+                                                <div className="text-xs opacity-80">Garanti BBVA</div>
+                                            </div>
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
+                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
+                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {INSTALLMENT_OPTIONS.map((opt) => {
+                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
+                                                        const monthly = total / opt.count;
+                                                        return (
+                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
+                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
+                                                                <td className="py-2 px-3 text-right text-gray-600">
+                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
+                                                                </td>
+                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
+                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
                                     <p className="text-xs text-gray-400 mt-4">
                                         * Taksit seçenekleri bankanızın sunduğu imkanlara göre değişiklik gösterebilir.
                                     </p>
