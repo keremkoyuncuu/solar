@@ -36,6 +36,8 @@ const AdminOrders: React.FC = () => {
                         created_at,
                         profiles:user_id ( email, role )
                     `)
+                    .neq('status', 'pending')
+                    .neq('status', 'pending_payment')
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;

@@ -61,6 +61,8 @@ const ProfileOrders: React.FC<ProfileOrdersProps> = ({ userId }) => {
                 )
             `)
             .eq('user_id', userId)
+            .neq('status', 'pending')
+            .neq('status', 'pending_payment')
             .order('created_at', { ascending: false });
 
         if (error) {
