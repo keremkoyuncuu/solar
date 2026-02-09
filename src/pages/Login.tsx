@@ -41,7 +41,13 @@ const Login: React.FC = () => {
                 navigate('/admin');
             }
         } catch (err: any) {
-            setError(err.message === 'Invalid login credentials' ? 'Hatalı e-posta veya şifre.' : err.message);
+            let errorMessage = err.message;
+            if (errorMessage === 'Invalid login credentials') {
+                errorMessage = 'Hatalı e-posta veya şifre.';
+            } else if (errorMessage === 'Email not confirmed') {
+                errorMessage = 'E-posta adresiniz henüz doğrulanmamış. Lütfen e-posta kutunuzu (ve spam klasörünü) kontrol edin.';
+            }
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }
