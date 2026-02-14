@@ -10,7 +10,8 @@ import {
     Image as ImageIcon,
     LayoutTemplate,
     MessageSquare,
-    Settings
+    Settings,
+    FileText
 } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -33,6 +34,7 @@ const AdminLayout: React.FC = () => {
         { path: '/admin/featured-collections', label: 'Vitrin (Koleksiyon)', icon: ImageIcon },
         { path: '/admin/reviews', label: 'Yorum Yönetimi', icon: MessageSquare },
         { path: '/admin/settings', label: 'Ayarlar (Döviz)', icon: Settings },
+        { path: '/admin/blogs', label: 'Blog Yönetimi', icon: FileText },
     ];
 
     return (

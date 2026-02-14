@@ -288,13 +288,14 @@ const PaymentPage: React.FC = () => {
                         {/* Credit Card Form */}
                         <div className="space-y-6">
                             {/* Bank Logos / Information */}
-                            <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-lg mb-6">
-                                <div className="flex -space-x-2">
-                                    <div className="w-10 h-6 bg-blue-600 rounded text-white text-[8px] flex items-center justify-center font-bold italic border border-white">VISA</div>
-                                    <div className="w-10 h-6 bg-red-600 rounded text-white text-[8px] flex items-center justify-center font-bold italic border border-white">MasterCard</div>
-                                    <div className="w-10 h-6 bg-white rounded text-blue-800 text-[8px] flex items-center justify-center font-bold border border-gray-200">TROY</div>
-                                </div>
-                                <div className="text-sm text-gray-600">
+                            {/* Bank Logos / Information */}
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg mb-6 p-4 flex flex-col items-center gap-3">
+                                <img
+                                    src="/src/assets/images/iyzico-payment-logos.png"
+                                    alt="Güvenli Ödeme"
+                                    className="h-8 object-contain"
+                                />
+                                <div className="text-sm text-gray-600 text-center">
                                     Garanti BBVA Sanal POS güvencesi ile tüm kredi kartları ile güvenli ödeme yapabilirsiniz.
                                 </div>
                             </div>
@@ -469,40 +470,103 @@ const PaymentPage: React.FC = () => {
                                 </summary>
                                 <div className="px-4 pb-4 text-xs text-gray-600 leading-relaxed max-h-60 overflow-y-auto">
                                     <h4 className="font-bold mb-2">MESAFELİ SATIŞ SÖZLEŞMESİ</h4>
-                                    <p className="font-bold mt-2">MADDE 1 – TARAFLAR</p>
-                                    <p><strong>SATICI:</strong> İçel Solar Market</p>
-                                    <p>Adres: Barış, Bahçeler Cd. Eroğlu plaza No:30/21, 33010 Akdeniz/Mersin</p>
-                                    <p>Telefon: 0538 767 70 71</p>
-                                    <p>E-posta: info@icelsolarmarket.com</p>
+
+                                    <p className="font-bold mt-2">1. TARAFLAR</p>
+                                    <p>İşbu Sözleşme aşağıdaki taraflar arasında aşağıda belirtilen hüküm ve şartlar çerçevesinde imzalanmıştır.</p>
 
                                     <p className="mt-2"><strong>ALICI:</strong></p>
-                                    <p>Adı Soyadı: {order.shipping_address?.full_name || order.guest_name}</p>
-                                    <p>Adresi: {order.shipping_address?.address_line} {order.shipping_address?.district}/{order.shipping_address?.city}</p>
+                                    <p>AD-SOYAD: {order.shipping_address?.full_name || order.guest_name}</p>
+                                    <p>ADRES: {order.shipping_address?.address_line} {order.shipping_address?.district}/{order.shipping_address?.city}</p>
+                                    <p>TELEFON: {order.shipping_address?.phone || order.guest_phone}</p>
+                                    <p>EPOSTA: {order.guest_email || 'Sipariş esnasında belirtildi'}</p>
+
+                                    <p className="mt-2"><strong>SATICI:</strong></p>
+                                    <p>ÜNVANI: İçel Solar Market</p>
+                                    <p>ADRES: Barış, Bahçeler Cd. Eroğlu plaza No:30/21, 33010 Akdeniz/Mersin</p>
+                                    <p>TELEFON: 0538 767 70 71 - 0324 336 63 36</p>
+                                    <p>EPOSTA: info@icelsolarmarket.com</p>
+
+                                    <p className="mt-2">İş bu sözleşmeyi kabul etmekle ALICI, sözleşme konusu siparişi onayladığı takdirde sipariş konusu bedeli ve varsa kargo ücreti, vergi gibi belirtilen ek ücretleri ödeme yükümlülüğü altına gireceğini ve bu konuda bilgilendirildiğini peşinen kabul eder.</p>
+
+                                    <p className="font-bold mt-4">2. TANIMLAR</p>
+                                    <p className="font-bold mt-4">3. KONU</p>
+                                    <p>İşbu Sözleşme, ALICI’nın, SATICI’ya ait internet sitesi üzerinden elektronik ortamda siparişini verdiği aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmelere Dair Yönetmelik hükümleri gereğince tarafların hak ve yükümlülüklerini düzenler.</p>
+                                    <p>Listelenen ve sitede ilan edilen fiyatlar satış fiyatıdır. İlan edilen fiyatlar ve vaatler güncelleme yapılana ve değiştirilene kadar geçerlidir. Süreli olarak ilan edilen fiyatlar ise belirtilen süre sonuna kadar geçerlidir.</p>
+
+                                    <p className="font-bold mt-4">4. SATICI BİLGİLERİ</p>
+                                    <p>Ünvanı: İçel Solar Market</p>
+                                    <p>Adres: Barış, Bahçeler Cd. Eroğlu plaza No:30/21, 33010 Akdeniz/Mersin</p>
+                                    <p>Telefon: 0538 767 70 71 - 0324 336 63 36</p>
+                                    <p>Eposta: info@icelsolarmarket.com</p>
+
+                                    <p className="font-bold mt-4">5. ALICI BİLGİLERİ</p>
+                                    <p>Teslim edilecek kişi: {order.shipping_address?.full_name || order.guest_name}</p>
+                                    <p>Teslimat Adresi: {order.shipping_address?.address_line} {order.shipping_address?.district}/{order.shipping_address?.city}</p>
                                     <p>Telefon: {order.shipping_address?.phone || order.guest_phone}</p>
+                                    <p>Eposta: {order.guest_email || 'Belirtilmedi'}</p>
 
-                                    <p className="font-bold mt-4">MADDE 2 – KONU</p>
-                                    <p>İşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait icelsolarmarket.com internet sitesinden elektronik ortamda siparişini yaptığı aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin saptanmasıdır.</p>
+                                    <p className="font-bold mt-4">6. SİPARİŞ VEREN KİŞİ BİLGİLERİ</p>
+                                    <p>Ad/Soyad/Unvan: {order.shipping_address?.full_name || order.guest_name}</p>
+                                    <p>Adres: {order.shipping_address?.address_line} {order.shipping_address?.district}/{order.shipping_address?.city}</p>
+                                    <p>Telefon: {order.shipping_address?.phone || order.guest_phone}</p>
+                                    <p>Eposta: {order.guest_email || 'Belirtilmedi'}</p>
 
-                                    <p className="font-bold mt-4">MADDE 3 – SÖZLEŞME KONUSU ÜRÜN</p>
-                                    <div className="mt-2 border border-gray-200 rounded p-2">
-                                        {order.items.map((item, idx) => (
-                                            <div key={idx} className="mb-1 border-b border-gray-100 last:border-0 pb-1">
-                                                {item.product_name_snapshot} - {item.quantity} Adet - {formatCurrency(item.line_total)}
-                                            </div>
-                                        ))}
-                                        <div className="font-bold mt-2 pt-1 border-t border-gray-200">
+                                    <p className="font-bold mt-4">7. SÖZLEŞME KONUSU ÜRÜN/ÜRÜNLER BİLGİLERİ</p>
+                                    <p>7.1. Malın/Ürün/Ürünlerin/Hizmetin temel özelliklerini (türü, miktarı, marka/modeli, rengi, adedi) SATICI’ya ait internet sitesinde yayınlanmaktadır.</p>
+                                    <p>7.2. Fiyatlar: Listelenen ve sitede ilan edilen fiyatlar satış fiyatıdır.</p>
+                                    <p>7.3. Vergiler ve Ödemeler: Sözleşme konusu mal ya da hizmetin tüm vergiler dâhil satış fiyatı aşağıda gösterilmiştir.</p>
+
+                                    <div className="mt-2 border border-gray-200 rounded p-2 bg-gray-50">
+                                        <table className="w-full text-left text-[10px]">
+                                            <thead>
+                                                <tr className="border-b border-gray-200">
+                                                    <th className="pb-1">Ürün Açıklaması</th>
+                                                    <th className="pb-1">Adet</th>
+                                                    <th className="pb-1">Birim Fiyat</th>
+                                                    <th className="pb-1 text-right">Ara Toplam</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {order.items.map((item, idx) => (
+                                                    <tr key={idx} className="border-b border-gray-100 last:border-0">
+                                                        <td className="py-1 pr-1">{item.product_name_snapshot}</td>
+                                                        <td className="py-1">{item.quantity}</td>
+                                                        <td className="py-1">{formatCurrency(item.unit_price_snapshot)}</td>
+                                                        <td className="py-1 text-right">{formatCurrency(item.line_total)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        <div className="font-bold mt-2 pt-1 border-t border-gray-200 text-right">
                                             TOPLAM: {formatCurrency(order.grand_total)}
                                         </div>
                                     </div>
 
-                                    <p className="font-bold mt-4">MADDE 4 – GENEL HÜKÜMLER</p>
-                                    <p>4.1. ALICI, internet sitesinde sözleşme konusu ürünün temel nitelikleri, satış fiyatı ve ödeme şekli ile teslimata ilişkin ön bilgileri okuyup bilgi sahibi olduğunu ve elektronik ortamda gerekli teyidi verdiğini beyan eder.</p>
-                                    <p>4.2. Sözleşme konusu ürün, yasal 30 günlük süreyi aşmamak koşulu ile her bir ürün için ALICI'nın yerleşim yerinin uzaklığına bağlı olarak internet sitesinde ön bilgiler içinde açıklanan süre içinde ALICI veya gösterdiği adresteki kişi/kuruluşa teslim edilir.</p>
-                                    <p>4.3. Kargo teslimatı sırasında ürünün zarar gördüğü tespit edilirse ALICI kargo yetkilisine tutanak tutturmalı ve ürünü teslim almamalıdır.</p>
+                                    <p className="font-bold mt-4">8. FATURA BİLGİLERİ</p>
+                                    <p>Ad/Soyad/Unvan: {order.shipping_address?.full_name || order.guest_name}</p>
+                                    <p>Adres: {order.shipping_address?.address_line} {order.shipping_address?.district}/{order.shipping_address?.city}</p>
+                                    <p>Telefon: {order.shipping_address?.phone || order.guest_phone}</p>
+                                    <p>Fatura teslim: Fatura sipariş teslimatı sırasında fatura adresine sipariş ile birlikte teslim edilecektir.</p>
 
-                                    <p className="font-bold mt-4">MADDE 5 – YETKİLİ MAHKEME</p>
-                                    <p>İşbu sözleşmenin uygulanmasında, Sanayi ve Ticaret Bakanlığınca ilan edilen değere kadar Tüketici Hakem Heyetleri ile ALICI'nın veya SATICI'nın yerleşim yerindeki Tüketici Mahkemeleri yetkilidir.</p>
-                                    <p className="mt-4">Siparişin gerçekleşmesi durumunda ALICI işbu sözleşmenin tüm koşullarını kabul etmiş sayılır.</p>
+                                    <p className="font-bold mt-4">9. GENEL HÜKÜMLER</p>
+                                    <p>9.1. Bilgilendirme ve Kabul: ALICI, SATICI’ya ait internet sitesinde sözleşme konusu ürünün temel nitelikleri, satış fiyatı ve ödeme şekli ile teslimata ilişkin ön bilgileri okuyup, bilgi sahibi olduğunu beyan eder.</p>
+                                    <p>9.2. Teslim Süresi: Sözleşme konusu her bir ürün, 30 günlük yasal süreyi aşmamak kaydı ile ALICI’ya teslim edilir.</p>
+
+                                    <p className="font-bold mt-4">10. CAYMA HAKKI</p>
+                                    <p>ALICI, ürünün kendisine teslim tarihinden itibaren 14 gün içerisinde, SATICI’ya bildirmek şartıyla hiçbir gerekçe göstermeksizin malı reddederek sözleşmeden cayma hakkını kullanabilir.</p>
+
+                                    <p className="font-bold mt-4">11. CAYMA HAKKI KULLANILAMAYACAK ÜRÜNLER</p>
+                                    <p>ALICI’nın isteği veya açıkça kişisel ihtiyaçları doğrultusunda hazırlanan ürünler cayma hakkı kapsamı dışında kalmaktadır.</p>
+
+                                    <p className="font-bold mt-4">12. TEMERRÜT HALİ</p>
+                                    <p>ALICI, ödeme işlemlerini kredi kartı ile yaptığı durumda temerrüde düştüğü takdirde, kart sahibi banka ile arasındaki kredi kartı sözleşmesi çerçevesinde faiz ödeyeceğini kabul eder.</p>
+
+                                    <p className="font-bold mt-4">13. YETKİLİ MAHKEME</p>
+                                    <p>İşbu sözleşmeden doğan uyuşmazlıklarda tüketici hakem heyetleri veya tüketici mahkemeleri yetkilidir.</p>
+
+                                    <p className="font-bold mt-4">14. YÜRÜRLÜK</p>
+                                    <p>ALICI, Site üzerinden verdiği siparişe ait ödemeyi gerçekleştirdiğinde işbu sözleşmenin tüm şartlarını kabul etmiş sayılır.</p>
+
                                 </div>
                             </details>
                             <details className="group border border-gray-200 rounded-lg">

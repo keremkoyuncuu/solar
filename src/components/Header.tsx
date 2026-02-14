@@ -352,12 +352,12 @@ export default function Header() {
                 {/* DESKTOP MENU (Hidden on Mobile) */}
                 <div className="hidden md:block border-t border-gray-100 bg-[#fffaf4] relative">
                     <div className="container mx-auto px-4">
-                        <nav className="flex items-center justify-center gap-4 lg:gap-8 xl:gap-12">
+                        <nav className="flex items-center justify-center gap-3 lg:gap-6 xl:gap-8">
                             {menuItems.map((item) => (
                                 <div key={item.id} className="relative group">
                                     <Link
                                         to={`/kategori/${item.slug}`}
-                                        className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider flex items-center gap-1"
+                                        className="py-4 text-[10px] lg:text-[11px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wide flex items-center gap-1"
                                     >
                                         {item.name.toUpperCase()}
                                         {item.children.length > 0 && <ChevronDown className="w-3 h-3" />}
@@ -378,13 +378,16 @@ export default function Header() {
                                     )}
                                 </div>
                             ))}
-                            <Link to="/bayi-basvuru" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider">
+                            <Link to="/blog" className="py-4 text-[10px] lg:text-[11px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wide">
+                                BLOG
+                            </Link>
+                            <Link to="/bayi-basvuru" className="py-4 text-[10px] lg:text-[11px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wide">
                                 BAYİLİK BAŞVURUSU
                             </Link>
-                            <Link to="/hakkimizda" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider">
+                            <Link to="/hakkimizda" className="py-4 text-[10px] lg:text-[11px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wide">
                                 HAKKIMIZDA
                             </Link>
-                            <Link to="/iletisim" className="py-4 text-[11px] lg:text-[12px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wider">
+                            <Link to="/iletisim" className="py-4 text-[10px] lg:text-[11px] font-bold text-gray-600 hover:text-[#f0c961] whitespace-nowrap transition-colors tracking-wide">
                                 İLETİŞİM
                             </Link>
                         </nav>
@@ -452,6 +455,7 @@ export default function Header() {
                                 <Link to="/products" className="block py-3 font-bold text-gray-800 border-b border-gray-100 hover:text-[#f0c961] text-sm">TÜM ÜRÜNLER</Link>
                                 <Link to="/bayi-basvuru" className="block py-3 font-bold text-gray-800 border-b border-gray-100 hover:text-[#f0c961] text-sm">BAYİLİK BAŞVURUSU</Link>
                                 <Link to="/hakkimizda" className="block py-3 font-bold text-gray-800 border-b border-gray-100 hover:text-[#f0c961] text-sm">HAKKIMIZDA</Link>
+                                <Link to="/blog" className="block py-3 font-bold text-gray-800 border-b border-gray-100 hover:text-[#f0c961] text-sm">BLOG</Link>
                                 <Link to="/iletisim" className="block py-3 font-bold text-gray-800 hover:text-[#f0c961] text-sm">İLETİŞİM</Link>
                             </div>
                         </nav>

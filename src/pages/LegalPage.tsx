@@ -74,33 +74,101 @@ const legalPages: Record<string, LegalContent> = {
         content: `
             <h2>MESAFELİ SATIŞ SÖZLEŞMESİ</h2>
 
-            <p><strong>MADDE 1 – TARAFLAR</strong></p>
-            <p><strong>SATICI:</strong><br>
-            Ünvanı: İçel Solar Market<br>
-            Adres: Barış, Bahçeler Cd. Eroğlu plaza No:30/21, 33010 Akdeniz/Mersin<br>
-            Telefon: 0538 767 70 71 - 0324 336 63 36<br>
-            E-posta: info@icelsolarmarket.com</p>
+            <p><strong>1. TARAFLAR</strong></p>
+            <p>İşbu Sözleşme aşağıdaki taraflar arasında aşağıda belirtilen hüküm ve şartlar çerçevesinde imzalanmıştır.</p>
 
             <p><strong>ALICI:</strong><br>
-            Adı Soyadı: [Sipariş Esnasında Belirtilir]<br>
-            Adresi: [Sipariş Esnasında Belirtilir]<br>
-            Telefon: [Sipariş Esnasında Belirtilir]</p>
+            AD-SOYAD: [Sipariş Esnasında Belirtilir]<br>
+            ADRES: [Sipariş Esnasında Belirtilir]<br>
+            TELEFON: [Sipariş Esnasında Belirtilir]<br>
+            EPOSTA: [Sipariş Esnasında Belirtilir]</p>
 
-            <p><strong>MADDE 2 – KONU</strong></p>
-            <p>İşbu sözleşmenin konusu, ALICI'nın SATICI'ya ait icelsolarmarket.com internet sitesinden elektronik ortamda siparişini yaptığı aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmeler Yönetmeliği hükümleri gereğince tarafların hak ve yükümlülüklerinin saptanmasıdır.</p>
+            <p><strong>SATICI:</strong><br>
+            AD-SOYAD/ÜNVAN: İçel Solar Market<br>
+            ADRES: Barış, Bahçeler Cd. Eroğlu plaza No:30/21, 33010 Akdeniz/Mersin<br>
+            TELEFON: 0538 767 70 71 - 0324 336 63 36<br>
+            EPOSTA: info@icelsolarmarket.com</p>
+            
+            <p>İş bu sözleşmeyi kabul etmekle ALICI, sözleşme konusu siparişi onayladığı takdirde sipariş konusu bedeli ve varsa kargo ücreti, vergi gibi belirtilen ek ücretleri ödeme yükümlülüğü altına gireceğini ve bu konuda bilgilendirildiğini peşinen kabul eder.</p>
 
-            <p><strong>MADDE 3 – SÖZLEŞME KONUSU ÜRÜN</strong></p>
-            <p>Ürünlerin Cinsi ve Türü, Miktarı, Marka/Modeli, Rengi, Satış Bedeli sipariş sonuçlandığı andaki gibidir. (Sipariş detaylarınız ödeme sayfasında ve size gönderilen e-postada yer almaktadır.)</p>
+            <p><strong>2. TANIMLAR</strong></p>
+            <p>İşbu sözleşmenin uygulanmasında ve yorumlanmasında aşağıda yazılı terimler karşılarındaki yazılı açıklamaları ifade edeceklerdir.</p>
+            <ul>
+                <li><strong>BAKAN:</strong> Gümrük ve Ticaret Bakanı’nı,</li>
+                <li><strong>BAKANLIK:</strong> Gümrük ve Ticaret Bakanlığı’nı,</li>
+                <li><strong>KANUN:</strong> 6502 sayılı Tüketicinin Korunması Hakkında Kanun’u,</li>
+                <li><strong>YÖNETMELİK:</strong> Mesafeli Sözleşmeler Yönetmeliği’ni,</li>
+                <li><strong>HİZMET:</strong> Bir ücret veya menfaat karşılığında yapılan ya da yapılması taahhüt edilen mal sağlama dışındaki her türlü tüketici işlemini,</li>
+                <li><strong>SATICI:</strong> Ticari veya mesleki faaliyetleri kapsamında tüketiciye mal sunan veya mal sunan adına veya hesabına hareket eden şirketi,</li>
+                <li><strong>ALICI:</strong> Bir mal veya hizmeti ticari veya mesleki olmayan amaçlarla edinen, kullanan veya yararlanan gerçek ya da tüzel kişiyi,</li>
+                <li><strong>SİTE:</strong> SATICI’ya ait internet sitesini,</li>
+                <li><strong>SİPARİŞ VEREN:</strong> Bir mal veya hizmeti SATICI’ya ait internet sitesi üzerinden talep eden gerçek ya da tüzel kişiyi,</li>
+                <li><strong>TARAFLAR:</strong> SATICI ve ALICI’yı,</li>
+                <li><strong>SÖZLEŞME:</strong> SATICI ve ALICI arasında akdedilen işbu sözleşmeyi,</li>
+                <li><strong>MAL:</strong> Alışverişe konu olan taşınır eşyayı ve elektronik ortamda kullanılmak üzere hazırlanan yazılım, ses, görüntü ve benzeri gayri maddi malları,</li>
+            </ul>
 
-            <p><strong>MADDE 4 – GENEL HÜKÜMLER</strong></p>
-            <p>4.1. ALICI, internet sitesinde sözleşme konusu ürünün temel nitelikleri, satış fiyatı ve ödeme şekli ile teslimata ilişkin ön bilgileri okuyup bilgi sahibi olduğunu ve elektronik ortamda gerekli teyidi verdiğini beyan eder.</p>
-            <p>4.2. Sözleşme konusu ürün, yasal 30 günlük süreyi aşmamak koşulu ile her bir ürün için ALICI'nın yerleşim yerinin uzaklığına bağlı olarak internet sitesinde ön bilgiler içinde açıklanan süre içinde ALICI veya gösterdiği adresteki kişi/kuruluşa teslim edilir.</p>
-            <p>4.3. Kargo teslimatı sırasında ürünün zarar gördüğü tespit edilirse ALICI kargo yetkilisine tutanak tutturmalı ve ürünü teslim almamalıdır.</p>
+            <p><strong>3. KONU</strong></p>
+            <p>İşbu Sözleşme, ALICI’nın, SATICI’ya ait internet sitesi üzerinden elektronik ortamda siparişini verdiği aşağıda nitelikleri ve satış fiyatı belirtilen ürünün satışı ve teslimi ile ilgili olarak 6502 sayılı Tüketicinin Korunması Hakkında Kanun ve Mesafeli Sözleşmelere Dair Yönetmelik hükümleri gereğince tarafların hak ve yükümlülüklerini düzenler.</p>
+            <p>Listelenen ve sitede ilan edilen fiyatlar satış fiyatıdır. İlan edilen fiyatlar ve vaatler güncelleme yapılana ve değiştirilene kadar geçerlidir. Süreli olarak ilan edilen fiyatlar ise belirtilen süre sonuna kadar geçerlidir.</p>
 
-            <p><strong>MADDE 5 – YETKİLİ MAHKEME</strong></p>
-            <p>İşbu sözleşmenin uygulanmasında, Sanayi ve Ticaret Bakanlığınca ilan edilen değere kadar Tüketici Hakem Heyetleri ile ALICI'nın veya SATICI'nın yerleşim yerindeki Tüketici Mahkemeleri yetkilidir.</p>
+            <p><strong>4. SATICI BİLGİLERİ</strong></p>
+            <p>Ünvanı: İçel Solar Market<br>
+            Adres: Barış, Bahçeler Cd. Eroğlu plaza No:30/21, 33010 Akdeniz/Mersin<br>
+            Telefon: 0538 767 70 71 - 0324 336 63 36<br>
+            Eposta: info@icelsolarmarket.com</p>
 
-            <p>Siparişin gerçekleşmesi durumunda ALICI işbu sözleşmenin tüm koşullarını kabul etmiş sayılır.</p>
+            <p><strong>5. ALICI BİLGİLERİ</strong></p>
+            <p>Teslim edilecek kişi: [Sipariş Esnasında Belirtilir]<br>
+            Teslimat Adresi: [Sipariş Esnasında Belirtilir]<br>
+            Telefon: [Sipariş Esnasında Belirtilir]<br>
+            Eposta/kullanıcı adı: [Sipariş Esnasında Belirtilir]</p>
+
+            <p><strong>6. SİPARİŞ VEREN KİŞİ BİLGİLERİ</strong></p>
+            <p>Ad/Soyad/Unvan: [Sipariş Esnasında Belirtilir]<br>
+            Adres: [Sipariş Esnasında Belirtilir]<br>
+            Telefon: [Sipariş Esnasında Belirtilir]<br>
+            Eposta/kullanıcı adı: [Sipariş Esnasında Belirtilir]</p>
+
+            <p><strong>7. SÖZLEŞME KONUSU ÜRÜN/ÜRÜNLER BİLGİLERİ</strong></p>
+            <p>7.1. Malın/Ürün/Ürünlerin/Hizmetin temel özelliklerini (türü, miktarı, marka/modeli, rengi, adedi) SATICI’ya ait internet sitesinde yayınlanmaktadır. Satıcı tarafından kampanya düzenlenmiş ise ilgili ürünün temel özelliklerini kampanya süresince inceleyebilirsiniz. Kampanya tarihine kadar geçerlidir.</p>
+
+            <p>7.2. Fiyatlar<br>
+            Listelenen ve sitede ilan edilen fiyatlar satış fiyatıdır. İlan edilen fiyatlar ve vaatler güncelleme yapılana ve değiştirilene kadar geçerlidir. Süreli olarak ilan edilen fiyatlar ise belirtilen süre sonuna kadar geçerlidir.</p>
+
+            <p>7.3. Vergiler ve Ödemeler<br>
+            Sözleşme konusu mal ya da hizmetin tüm vergiler dâhil satış fiyatı aşağıda gösterilmiştir.</p>
+            
+            <p>[Ürün Listesi ve Toplam Tutar Sipariş Esnasında Belirtilir]</p>
+
+            <p><strong>8. FATURA BİLGİLERİ</strong></p>
+            <p>Ad/Soyad/Unvan: [Sipariş Esnasında Belirtilir]<br>
+            Adres: [Sipariş Esnasında Belirtilir]<br>
+            Telefon: [Sipariş Esnasında Belirtilir]<br>
+            Eposta/kullanıcı adı: [Sipariş Esnasında Belirtilir]<br>
+            Fatura teslim: Fatura sipariş teslimatı sırasında fatura adresine sipariş ile birlikte teslim edilecektir.</p>
+
+            <p><strong>9. GENEL HÜKÜMLER</strong></p>
+            <p>9.1. Bilgilendirme ve Kabul<br>
+            ALICI, SATICI’ya ait internet sitesinde sözleşme konusu ürünün temel nitelikleri, satış fiyatı ve ödeme şekli ile teslimata ilişkin ön bilgileri okuyup, bilgi sahibi olduğunu, elektronik ortamda gerekli teyidi verdiğini kabul, beyan ve taahhüt eder.</p>
+
+            <p>9.2. Teslim Süresi<br>
+            Sözleşme konusu her bir ürün, 30 günlük yasal süreyi aşmamak kaydı ile ALICI’nın yerleşim yeri uzaklığına bağlı olarak internet sitesindeki ön bilgiler kısmında belirtilen süre zarfında teslim edilir.</p>
+
+            <p><strong>10. CAYMA HAKKI</strong></p>
+            <p>ALICI, mesafeli sözleşmenin mal satışına ilişkin olması durumunda, ürünün kendisine veya gösterdiği adresteki kişi/kuruluşa teslim tarihinden itibaren 14 gün içerisinde, SATICI’ya bildirmek şartıyla hiçbir gerekçe göstermeksizin malı reddederek sözleşmeden cayma hakkını kullanabilir.</p>
+
+            <p><strong>11. CAYMA HAKKI KULLANILAMAYACAK ÜRÜNLER</strong></p>
+            <p>ALICI’nın isteği veya açıkça kişisel ihtiyaçları doğrultusunda hazırlanan, iç giyim alt parçaları, makyaj malzemeleri, tek kullanımlık ürünler gibi ürünler cayma hakkı kapsamı dışında kalmaktadır. (Solar ürünleri için ayrıca: Montajı yapılmış, kullanılmış, ambalajı bozulmuş, tekrar satılabilirliğini kaybetmiş ürünler iade alınamaz.)</p>
+
+            <p><strong>12. TEMERRÜT HALİ VE HUKUKİ SONUÇLARI</strong></p>
+            <p>ALICI, ödeme işlemlerini kredi kartı ile yaptığı durumda temerrüde düştüğü takdirde, kart sahibi banka ile arasındaki kredi kartı sözleşmesi çerçevesinde faiz ödeyeceğini ve bankaya karşı sorumlu olacağını kabul, beyan ve taahhüt eder.</p>
+
+            <p><strong>13. YETKİLİ MAHKEME</strong></p>
+            <p>İşbu sözleşmeden doğan uyuşmazlıklarda şikayet ve itirazlar, tüketicinin yerleşim yerinin bulunduğu veya tüketici işleminin yapıldığı yerdeki tüketici sorunları hakem heyetine veya tüketici mahkemesine yapılacaktır.</p>
+
+            <p><strong>14. YÜRÜRLÜK</strong></p>
+            <p>ALICI, Site üzerinden verdiği siparişe ait ödemeyi gerçekleştirdiğinde işbu sözleşmenin tüm şartlarını kabul etmiş sayılır.</p>
         `
     },
     'kvkk-aydinlatma-metni': {

@@ -27,6 +27,11 @@ import AdminDealers from './pages/admin/AdminDealers';
 import AdminHeroSlides from './pages/admin/AdminHeroSlides';
 import AdminReviews from './pages/admin/AdminReviews';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminBlogs from './pages/admin/AdminBlogs';
+import AdminBlogDetail from './pages/admin/AdminBlogDetail';
+import BlogPage from './pages/BlogPage';
+import BlogPostPage from './pages/BlogPostPage';
+
 import SearchResults from './pages/SearchResults';
 import WhatsAppButton from './components/common/WhatsAppButton';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -54,6 +59,8 @@ function MainLayout() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/update-password" element={<UpdatePassword />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
           <Route path="/products/:slug" element={<ProductDetail />} />
           <Route path="/products/:slug/reviews" element={<ProductReviewsPage />} />
           <Route path="/search" element={<SearchResults />} />
@@ -101,6 +108,9 @@ function MainLayout() {
               <Route path="/admin/hero-yonetimi" element={<AdminHeroSlides />} />
               <Route path="/admin/reviews" element={<AdminReviews />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/admin/blogs" element={<AdminBlogs />} />
+              <Route path="/admin/blogs/new" element={<AdminBlogDetail />} />
+              <Route path="/admin/blogs/:id" element={<AdminBlogDetail />} />
 
 
               {/* Dinamik Rotalar (Dynamic Routes) - ALTTA */}

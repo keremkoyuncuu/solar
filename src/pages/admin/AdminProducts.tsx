@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductModal from '../../components/admin/ProductModal';
+import ExcelImportModal from '../../components/admin/ExcelImportModal';
 
 interface ProductSummary {
     id: string;
@@ -27,6 +28,7 @@ const AdminProducts: React.FC = () => {
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<any | null>(null);
 
     const fetchProducts = async () => {
@@ -183,15 +185,23 @@ const AdminProducts: React.FC = () => {
                             {searchQuery ? `${filteredProducts.length} / ${products.length} ürün` : `Toplam ${products.length} ürün`}
                         </p>
                     </div>
-                    <button
-                        onClick={() => {
-                            setEditingProduct(null);
-                            setIsModalOpen(true);
-                        }}
-                        className="bg-[#f0c961] hover:bg-[#e0b850] text-black font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-2"
-                    >
-                        <span className="text-xl leading-none font-bold">+</span> Yeni Ürün
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-2"
+                        >
+                            <span className="text-xl leading-none font-bold">⇪</span> Excel Yükle
+                        </button>
+                        <button
+                            onClick={() => {
+                                setEditingProduct(null);
+                                setIsModalOpen(true);
+                            }}
+                            className="bg-[#f0c961] hover:bg-[#e0b850] text-black font-semibold py-2 px-4 rounded-lg shadow-sm transition-colors flex items-center gap-2"
+                        >
+                            <span className="text-xl leading-none font-bold">+</span> Yeni Ürün
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search Box */}
@@ -324,6 +334,15 @@ const AdminProducts: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSave={fetchProducts}
                 editProduct={editingProduct}
+            />
+
+            <ExcelImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onSave={() => {
+                    setIsImportModalOpen(false);
+                    fetchProducts();
+                }}
             />
         </div>
     );

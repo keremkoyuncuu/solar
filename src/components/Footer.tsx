@@ -70,8 +70,17 @@ const Footer: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Payment Logos */}
+                <div className="flex justify-center mt-8 pb-6 border-b border-white/10">
+                    <img
+                        src="/src/assets/images/iyzico-payment-logos.png"
+                        alt="Ödeme Yöntemleri"
+                        className="h-8 md:h-10 object-contain opacity-80 hover:opacity-100 transition-opacity"
+                    />
+                </div>
+
                 {/* Copyright */}
-                <div className="border-t border-white/10 mt-8 pt-6 text-center text-sm text-gray-500">
+                <div className="pt-6 text-center text-sm text-gray-500">
                     © {new Date().getFullYear()} Icel Solar Market. Tüm hakları saklıdır.
                 </div>
             </div>
