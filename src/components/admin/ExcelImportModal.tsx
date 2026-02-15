@@ -136,7 +136,6 @@ const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ isOpen, onClose, on
                 try {
                     // 1. KATEGORİ İŞLEMLERİ
                     let categoryId = null;
-                    const categorySlug = slugify(row.kategori);
 
                     // Kategoriyi bulmaya çalış
                     const { data: existingCat } = await supabase
@@ -154,7 +153,6 @@ const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ isOpen, onClose, on
 
                     // 2. ÜRÜN KONTROLÜ (DUPLICATE CHECK)
                     let productId = null;
-                    let isUpdate = false;
 
                     // Önce SKU ile varyantlardan ürünü bulmaya çalış (Eğer sku verilmişse)
                     if (row.sku) {
@@ -166,7 +164,6 @@ const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ isOpen, onClose, on
 
                         if (existingVariant) {
                             productId = existingVariant.product_id;
-                            isUpdate = true;
                         }
                     }
 
@@ -182,7 +179,6 @@ const ExcelImportModal: React.FC<ExcelImportModalProps> = ({ isOpen, onClose, on
                             productId = existingProduct.id;
                             // Sadece güncelleme olarak işaretlemiyoruz, çünkü isim aynı olsa bile belki yeni bir varyant ekleniyor olabilir.
                             // Ancak bizim senaryomuzda "Tek satır = Tek varyant" olduğu için update kabul edebiliriz.
-                            isUpdate = true;
                         }
                     }
 
