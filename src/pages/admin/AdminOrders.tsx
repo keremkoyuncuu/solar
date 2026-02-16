@@ -10,9 +10,12 @@ interface Order {
     grand_total: number;
     status: string;
     created_at: string;
+    guest_name?: string;
+    guest_email?: string;
     profiles: {
         email: string;
         role: string;
+        full_name?: string;
     } | null;
 }
 
@@ -34,7 +37,9 @@ const AdminOrders: React.FC = () => {
                         grand_total,
                         status,
                         created_at,
-                        profiles:user_id ( email, role )
+                        guest_name,
+                        guest_email,
+                        profiles:user_id ( email, role, full_name )
                     `)
                     .neq('status', 'pending')
                     .neq('status', 'pending_payment')
@@ -91,10 +96,19 @@ const AdminOrders: React.FC = () => {
                                 orders.map((order) => (
                                     <tr key={order.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="p-4 py-4 font-mono font-medium text-gray-900">{order.order_no}</td>
-                                        <td className="p-4 py-4 text-gray-600">{order.profiles?.email || 'Silinmiş Kullanıcı'}</td>
+                                        <td className="p-4 py-4 text-gray-600">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-gray-900">
+                                                    {order.profiles?.full_name || order.guest_name || 'İsimsiz Müşteri'}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {order.profiles?.email || order.guest_email || '-'}
+                                                </span>
+                                            </div>
+                                        </td>
                                         <td className="p-4 py-4">
                                             <span className={`text-[10px] px-2 py-0.5 rounded border uppercase ${order.profiles?.role === 'b2b' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-gray-50 text-gray-600 border-gray-200'}`}>
-                                                {order.profiles?.role || '-'}
+                                                {order.profiles?.role || 'Misafir'}
                                             </span>
                                         </td>
                                         <td className="p-4 text-gray-500 text-sm">
