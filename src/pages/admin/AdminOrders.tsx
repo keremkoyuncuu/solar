@@ -130,9 +130,9 @@ const AdminOrders: React.FC = () => {
                                         <td className="p-4 py-4 text-center">
                                             <Link
                                                 to={`/admin/orders/${order.id}`}
-                                                className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition-colors"
+                                                className="inline-flex items-center justify-center px-4 py-2 border border-blue-200 text-xs font-bold rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
                                             >
-                                                Detay
+                                                Sipariş Detayı ➜
                                             </Link>
                                         </td>
                                     </tr>

@@ -138,120 +138,170 @@ const AdminOrderDetail: React.FC = () => {
 
                 {/* Header Card */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <Link to="/admin/orders" className="text-gray-500 hover:text-gray-900 text-sm mb-4 inline-flex items-center">
-                        <span className="mr-2">←</span> Sipariş Listesine Dön
-                    </Link>
-
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Sipariş #{order.order_no}</h1>
-                            <p className="text-sm text-gray-500 mt-1">{formatDate(order.created_at)}</p>
-                        </div>
-
-                        <div>
-                            <label className="block text-xs text-gray-500 mb-1">Sipariş Durumu</label>
-                            <select
-                                value={order.status}
-                                onChange={(e) => handleStatusChange(e.target.value)}
-                                disabled={updating}
-                                className={`px-4 py-2 rounded-lg border text-sm font-bold ${formatOrderStatus(order.status).color} bg-white`}
-                            >
-                                <option value="pending_payment">Ödeme Bekliyor</option>
-                                <option value="paid">Ödeme Alındı</option>
-                                <option value="preparing">Hazırlanıyor</option>
-                                <option value="shipped">Kargolandı</option>
-                                <option value="delivered">Teslim Edildi</option>
-                                <option value="cancelled">İptal Edildi</option>
-                                <option value="refunded">İade Edildi</option>
-                            </select>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <Link to="/admin/orders" className="text-gray-500 hover:text-gray-900 text-sm inline-flex items-center group">
+                            <span className="mr-2 group-hover:-translate-x-1 transition-transform">←</span> Sipariş Listesine Dön
+                        </Link>
+                        <div className="text-right">
+                            <span className="text-xs text-gray-500 block mb-1">Sipariş Tarihi</span>
+                            <span className="font-medium text-gray-900">{formatDate(order.created_at)}</span>
                         </div>
                     </div>
-                </div>
 
-                {/* Müşteri Bilgileri */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Müşteri Bilgileri
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-gray-100">
                         <div>
-                            <span className="block text-xs text-gray-500 uppercase mb-1">Ad Soyad</span>
-                            <p className="font-medium text-gray-900">{customerName}</p>
+                            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sipariş #{order.order_no}</h1>
+                            <div className="flex items-center gap-2">
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${formatOrderStatus(order.status).color}`}>
+                                    {formatOrderStatus(order.status).label}
+                                </span>
+                                {order.user_id ? (
+                                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                        Üye Müşteri
+                                    </span>
+                                ) : (
+                                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-50 text-gray-600 border border-gray-200">
+                                        Misafir Müşteri
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div>
-                            <span className="block text-xs text-gray-500 uppercase mb-1">E-posta</span>
-                            <p className="font-medium text-gray-900">{customerEmail}</p>
-                        </div>
-                        <div>
-                            <span className="block text-xs text-gray-500 uppercase mb-1">Telefon</span>
-                            <p className="font-medium text-gray-900">{customerPhone}</p>
-                        </div>
-                        <div>
-                            <span className="block text-xs text-gray-500 uppercase mb-1">Hesap Tipi</span>
-                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
-                                {order.user_id ? 'Üye' : 'Misafir'}
-                            </span>
+
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 min-w-[300px]">
+                            <label className="block text-xs font-semibold text-gray-700 uppercase mb-2">Sipariş Durumunu Güncelle</label>
+                            <div className="flex gap-2">
+                                <select
+                                    value={order.status}
+                                    onChange={(e) => handleStatusChange(e.target.value)}
+                                    disabled={updating}
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                >
+                                    <option value="pending_payment">Ödeme Bekliyor</option>
+                                    <option value="paid">Ödeme Alındı</option>
+                                    <option value="preparing">Hazırlanıyor</option>
+                                    <option value="shipped">Kargolandı</option>
+                                    <option value="delivered">Teslim Edildi</option>
+                                    <option value="cancelled">İptal Edildi</option>
+                                    <option value="refunded">İade Edildi</option>
+                                </select>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">
+                                Durum değişikliği müşteriye e-posta ile bildirilir.
+                            </p>
                         </div>
                     </div>
-                </div>
 
-                {/* Teslimat Adresi */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Teslimat Adresi
-                    </h3>
-                    {order.shipping_address ? (
-                        <div className="text-gray-700 space-y-1">
-                            <p className="font-medium">{order.shipping_address.full_name}</p>
-                            <p>{order.shipping_address.address_line}</p>
-                            <p>{order.shipping_address.district} / {order.shipping_address.city}</p>
-                            {order.shipping_address.phone && <p className="text-gray-500 mt-2">📞 {order.shipping_address.phone}</p>}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                        {/* Müşteri Bilgileri */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                Müşteri Bilgileri
+                            </h3>
+                            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                                <div>
+                                    <span className="block text-xs text-gray-500">Ad Soyad</span>
+                                    <span className="font-medium text-gray-900 block">{customerName}</span>
+                                </div>
+                                <div>
+                                    <span className="block text-xs text-gray-500">E-posta</span>
+                                    <a href={`mailto:${customerEmail}`} className="font-medium text-indigo-600 hover:text-indigo-800 block break-all">{customerEmail}</a>
+                                </div>
+                                <div>
+                                    <span className="block text-xs text-gray-500">Telefon</span>
+                                    <a href={`tel:${customerPhone}`} className="font-medium text-gray-900 block">{customerPhone}</a>
+                                </div>
+                            </div>
                         </div>
-                    ) : (
-                        <p className="text-gray-400 italic">Adres bilgisi bulunamadı</p>
-                    )}
+
+                        {/* Teslimat Adresi */}
+                        <div>
+                            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Teslimat Adresi
+                            </h3>
+                            <div className="bg-gray-50 rounded-lg p-4 h-full">
+                                {order.shipping_address ? (
+                                    <div className="text-gray-900 space-y-1">
+                                        <p className="font-medium">{order.shipping_address.full_name}</p>
+                                        <p className="text-sm leading-relaxed">{order.shipping_address.address_line}</p>
+                                        <p className="text-sm font-medium mt-2">{order.shipping_address.district} / {order.shipping_address.city}</p>
+                                        {order.shipping_address.phone && (
+                                            <p className="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                                                İletişim: {order.shipping_address.phone}
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400 italic text-sm">Adres bilgisi bulunamadı</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Sipariş İçeriği */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="px-6 py-4 border-b bg-gray-50">
+                    <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                         <h3 className="font-semibold text-gray-900">Sipariş İçeriği</h3>
+                        <span className="text-sm text-gray-500">{order.order_items.length} Ürün</span>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-white border-b text-xs text-gray-500 uppercase">
+                            <thead className="bg-white border-b border-gray-200 text-xs text-gray-500 uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-3">Ürün</th>
-                                    <th className="px-6 py-3 text-center">Adet</th>
-                                    <th className="px-6 py-3 text-right">Birim Fiyat</th>
-                                    <th className="px-6 py-3 text-right">Toplam</th>
+                                    <th className="px-6 py-3 font-medium">Ürün Detayı</th>
+                                    <th className="px-6 py-3 font-medium text-center">Birim Fiyat</th>
+                                    <th className="px-6 py-3 font-medium text-center">Adet</th>
+                                    <th className="px-6 py-3 font-medium text-right">Toplam</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y text-sm">
+                            <tbody className="divide-y divide-gray-100 text-sm">
                                 {order.order_items.map((item) => (
-                                    <tr key={item.id}>
+                                    <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-900">{item.product_name_snapshot}</div>
-                                            <div className="text-gray-500 text-xs">{item.sku_snapshot}</div>
+                                            <div className="text-gray-500 text-xs mt-0.5 font-mono bg-gray-100 inline-block px-1.5 py-0.5 rounded">
+                                                SKU: {item.sku_snapshot}
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">{item.quantity}</td>
-                                        <td className="px-6 py-4 text-right">{formatCurrency(item.unit_price_snapshot)}</td>
-                                        <td className="px-6 py-4 text-right font-medium">{formatCurrency(item.line_total)}</td>
+                                        <td className="px-6 py-4 text-center text-gray-600">
+                                            {formatCurrency(item.unit_price_snapshot)}
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="inline-flex items-center justify-center bg-gray-100 text-gray-800 font-bold px-2.5 py-0.5 rounded text-xs">
+                                                {item.quantity}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-bold text-gray-900">
+                                            {formatCurrency(item.line_total)}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                    <div className="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
-                        <span className="font-semibold text-gray-900">Genel Toplam</span>
-                        <span className="text-xl font-bold text-gray-900">{formatCurrency(order.grand_total)}</span>
+                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                        <div className="flex flex-col items-end gap-2">
+                            <div className="flex justify-between w-full md:w-64 text-sm text-gray-600">
+                                <span>Ara Toplam</span>
+                                <span>{formatCurrency(order.grand_total / 1.2)}</span>
+                            </div>
+                            <div className="flex justify-between w-full md:w-64 text-sm text-gray-600">
+                                <span>KDV (%20)</span>
+                                <span>{formatCurrency(order.grand_total - (order.grand_total / 1.2))}</span>
+                            </div>
+                            <div className="w-full md:w-64 border-t border-gray-200 my-1"></div>
+                            <div className="flex justify-between w-full md:w-64 text-lg font-bold text-gray-900">
+                                <span>Genel Toplam</span>
+                                <span>{formatCurrency(order.grand_total)}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
