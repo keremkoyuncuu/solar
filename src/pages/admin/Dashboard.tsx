@@ -46,11 +46,11 @@ const Dashboard: React.FC = () => {
                 recentOrdersRes,
                 criticalStockItemsRes
             ] = await Promise.all([
-                // 1. Toplam Ciro (Direct query instead of RPC)
-                supabase.from('orders').select('grand_total'),
+                // 1. Toplam Ciro (Sadece ödemesi alınmış siparişler)
+                supabase.from('orders').select('grand_total').in('status', ['paid', 'approved', 'shipped', 'delivered']),
 
-                // 2. Bekleyen Siparişler
-                supabase.from('orders').select('id', { count: 'exact' }).in('status', ['pending_payment', 'approved']),
+                // 2. Bekleyen Siparişler (Ödemesi alınmış veya hazırlanıyor)
+                supabase.from('orders').select('id', { count: 'exact' }).in('status', ['paid', 'approved']),
 
                 // 3. Toplam Müşteri
                 supabase.from('profiles').select('id', { count: 'exact' }),
@@ -58,15 +58,18 @@ const Dashboard: React.FC = () => {
                 // 4. Kritik Stok Sayısı (Count from Variants)
                 supabase.from('product_variants').select('id', { count: 'exact' }).lt('stock', 5),
 
-                // 5. Grafik Verisi (Son 30 gün - grand_total)
+                // 5. Grafik Verisi (Son 30 gün - Sadece ödemesi alınmışlar)
                 supabase.from('orders')
                     .select('created_at, grand_total')
+                    .in('status', ['paid', 'approved', 'shipped', 'delivered'])
                     .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
                     .order('created_at', { ascending: true }),
 
-                // 6. Son Siparişler (grand_total)
+                // 6. Son Siparişler (Siparişler sayfası ile aynı mantık - Tümü)
                 supabase.from('orders')
                     .select('id, created_at, grand_total, status, profiles(full_name, email)')
+                    .neq('status', 'pending_payment')
+                    .neq('status', 'pending')
                     .order('created_at', { ascending: false })
                     .limit(5),
 
@@ -117,6 +120,7 @@ const Dashboard: React.FC = () => {
     const getStatusBadge = (status: string) => {
         const styles: Record<string, string> = {
             pending_payment: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            paid: 'bg-indigo-100 text-indigo-800 border-indigo-200',
             approved: 'bg-blue-100 text-blue-800 border-blue-200',
             shipped: 'bg-purple-100 text-purple-800 border-purple-200',
             delivered: 'bg-green-100 text-green-800 border-green-200',
@@ -126,6 +130,7 @@ const Dashboard: React.FC = () => {
 
         const labels: Record<string, string> = {
             pending_payment: 'Ödeme Bekliyor',
+            paid: 'Ödeme Alındı',
             approved: 'Hazırlanıyor',
             shipped: 'Kargolandı',
             delivered: 'Teslim Edildi',

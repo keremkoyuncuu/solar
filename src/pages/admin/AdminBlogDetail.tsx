@@ -1,3 +1,4 @@
+import imageCompression from 'browser-image-compression';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -69,19 +70,36 @@ const AdminBlogDetail: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: checked }));
     };
 
+
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
 
-        const file = e.target.files[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `${fileName}`;
+        let file = e.target.files[0];
+
+        // Sıkıştırma Ayarları
+        const options = {
+            maxSizeMB: 0.5, // Maksimum 0.5MB
+            maxWidthOrHeight: 1200, // Maksimum genişlik/yükseklik
+            useWebWorker: true,
+            fileType: 'image/webp' // WebP formatına çevir
+        };
 
         setLoading(true);
         try {
+            // 1. Resmi Sıkıştır
+            console.log(`Orjinal dosya boyutu: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+            const compressedFile = await imageCompression(file, options);
+            console.log(`Sıkıştırılmış dosya boyutu: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+
+            // 2. Dosya ismini hazırla (.webp olarak)
+            const fileExt = 'webp';
+            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // 3. Supabase'e Yükle
             const { error: uploadError } = await supabase.storage
                 .from('blog-images')
-                .upload(filePath, file);
+                .upload(filePath, compressedFile);
 
             if (uploadError) throw uploadError;
 
