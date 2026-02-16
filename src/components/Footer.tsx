@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import paymentLogos from '../assets/images/iyzico-payment-logos.png';
 
 const Footer: React.FC = () => {
     return (
@@ -73,7 +74,7 @@ const Footer: React.FC = () => {
                 {/* Payment Logos */}
                 <div className="flex justify-center mt-8 pb-6 border-b border-white/10">
                     <img
-                        src="/src/assets/images/iyzico-payment-logos.png"
+                        src={paymentLogos}
                         alt="Ödeme Yöntemleri"
                         className="h-8 md:h-10 object-contain opacity-80 hover:opacity-100 transition-opacity"
                     />
