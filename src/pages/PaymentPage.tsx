@@ -30,9 +30,9 @@ const PaymentPage: React.FC = () => {
 
     // Bank Details for EFT
     const BANK_INFO = {
-        bankName: 'Garanti BBVA',
-        iban: 'TR00 0000 0000 0000 0000 0000 00',
-        accountHolder: 'İçel Solar Market'
+        bankName: 'Ziraat Bankası',
+        iban: 'TR60 0001 0006 2497 5360 2750 01',
+        accountHolder: 'Yol Mühendislik Enerji Sistemleri Elektrik Makina İnşaat Taahhüt Ticaret Limited Şirketi'
     };
 
     // Credit Card State
