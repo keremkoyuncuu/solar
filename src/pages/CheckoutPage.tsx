@@ -115,6 +115,9 @@ const CheckoutPage: React.FC = () => {
                         sku, 
                         base_price, 
                         stock,
+                        discount_percentage,
+                        discount_start_date,
+                        discount_end_date,
                         products (
                             name, 
                             slug
@@ -129,7 +132,12 @@ const CheckoutPage: React.FC = () => {
             if (itemsData) {
                 const itemsWithTotals = await Promise.all(itemsData.map(async (item: any) => {
                     const variant = item.product_variants;
-                    const unitPrice = await calculateVariantPrice(variant.id, variant.base_price, userRole);
+                    const unitPrice = await calculateVariantPrice(
+                        variant.id, variant.base_price, userRole,
+                        variant.discount_percentage || 0,
+                        variant.discount_start_date,
+                        variant.discount_end_date
+                    );
 
                     return {
                         ...item,
@@ -252,6 +260,9 @@ const CheckoutPage: React.FC = () => {
                     variant_id,
                     product_variants (
                         id, name, sku, stock, base_price, is_active,
+                        discount_percentage,
+                        discount_start_date,
+                        discount_end_date,
                         products (
                             id,
                             name, 
@@ -276,7 +287,12 @@ const CheckoutPage: React.FC = () => {
                 if (!variant.is_active) throw new Error(`"${variant.name}" ürünü şu anda satışa kapalı.`);
                 if (variant.stock < qty) throw new Error(`"${variant.name}" için yeterli stok yok. Mevcut: ${variant.stock}`);
 
-                const unitPriceUSD = await calculateVariantPrice(variant.id, variant.base_price, userRole);
+                const unitPriceUSD = await calculateVariantPrice(
+                    variant.id, variant.base_price, userRole,
+                    variant.discount_percentage || 0,
+                    variant.discount_start_date,
+                    variant.discount_end_date
+                );
                 const lineTotalUSD = unitPriceUSD * qty;
 
                 // CONVERT TO TL AT THIS POINT TO ENSURE ORDER IS IN TL
