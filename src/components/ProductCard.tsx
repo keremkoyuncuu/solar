@@ -27,9 +27,11 @@ export interface Product {
     id: string;
     name: string;
     slug: string;
+    created_at?: string;
     product_images?: ProductImage[];
     product_variants?: ProductVariant[];
     is_featured?: boolean;
+    displayPrice?: number;
 }
 
 interface ProductCardProps {
@@ -49,12 +51,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     // Ideally this should be passed in calculated, but if not, we use the first variant or "Fiyat Sorunuz"
     // Since we are fetching variants, we can use base_price of the first variant as a fallback display
     const variants = product.product_variants || [];
-    const minPrice = variants.length > 0
-        ? Math.min(...variants.map(v => v.price || v.base_price || 0))
-        : 0;
-    const maxOriginalPrice = variants.length > 0
-        ? Math.max(...variants.map(v => v.originalPrice || v.base_price || 0))
-        : 0;
+    // Find the cheapest variant and use its own originalPrice for consistent display
+    const cheapestVariant = variants.length > 0
+        ? variants.reduce((min, v) => ((v.price || v.base_price || 0) < (min.price || min.base_price || 0) ? v : min), variants[0])
+        : null;
+    const minPrice = cheapestVariant ? (cheapestVariant.price || cheapestVariant.base_price || 0) : 0;
+    const matchingOriginalPrice = cheapestVariant ? (cheapestVariant.originalPrice || cheapestVariant.base_price || 0) : 0;
     const hasAnyDiscount = variants.some(v => v.hasDiscount);
     const maxDiscount = variants.length > 0
         ? Math.max(...variants.filter(v => v.hasDiscount).map(v => v.discount_percentage || 0))
@@ -179,9 +181,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
                     {minPrice > 0 ? (
                         <div className="flex flex-col items-center gap-1">
-                            {hasAnyDiscount && maxOriginalPrice > minPrice && (
+                            {hasAnyDiscount && matchingOriginalPrice > minPrice && (
                                 <span className="text-sm text-gray-500 line-through decoration-red-500 decoration-2">
-                                    {formatPrice(maxOriginalPrice)}
+                                    {formatPrice(matchingOriginalPrice)}
                                 </span>
                             )}
                             <span className={`text-lg font-bold ${hasAnyDiscount ? 'text-red-600' : 'text-[#6D4C41]'}`}>

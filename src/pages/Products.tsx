@@ -41,74 +41,49 @@ const Products: React.FC = () => {
                     userRole = profile?.role || 'b2c';
                 }
 
-                // 3. If B2B, Batch Fetch Prices
-                if (userRole === 'b2b' && finalProducts.length > 0) {
-                    // Extract all variant IDs
-                    const allVariantIds = finalProducts.flatMap(p =>
-                        (p.product_variants || []).map((v: any) => v.id)
-                    );
+                // 3. If B2B, fetch global discount rate
+                let b2bDiscount = 0;
+                if (userRole === 'b2b') {
+                    const { data: settingsData } = await supabase
+                        .from('app_settings')
+                        .select('value')
+                        .eq('key', 'b2b_discount_percentage')
+                        .maybeSingle();
+                    b2bDiscount = settingsData?.value?.percentage || 0;
+                }
 
-                    if (allVariantIds.length > 0) {
-                        const { data: priceData, error: priceError } = await supabase
-                            .from('variant_prices')
-                            .select('variant_id, price')
-                            .in('variant_id', allVariantIds)
-                            .eq('is_active', true)
-                            .order('created_at', { ascending: false }); // get latest
-
-                        if (!priceError && priceData) {
-                            // Map prices: variant_id -> price
-                            // Since we ordered by created_at desc, the first one found for each variant is the latest/active one.
-                            // However, .in() returns a list. We need to process carefully to pick the latest if duplicates exist (though usually logic handles one active).
-                            // A simple Map will overwrite if we iterate standardly, but we want the *latest*.
-                            // The query result order matters.
-
-                            const priceMap = new Map<string, number>();
-                            // We reverse iterate or check existence to ensure we get the correct one if needed, 
-                            // but simpler: if we trust the API to return all active prices, we can just use them.
-                            // Assuming typical setup:
-                            priceData.forEach(p => {
-                                // If multiple prices exist (shouldn't if is_active is managed well), first one wins or overwrite? 
-                                // Let's populate.
-                                if (!priceMap.has(p.variant_id)) {
-                                    priceMap.set(p.variant_id, p.price);
-                                }
-                            });
-
-                            // 4. Inject Prices into Variants
-                            finalProducts = finalProducts.map(p => ({
-                                ...p,
-                                product_variants: (p.product_variants || []).map((v: any) => ({
-                                    ...v,
-                                    // Inject 'price' property which ProductCard looks for.
-                                    // Fallback to base_price if no specific price found.
-                                    price: priceMap.get(v.id) || v.base_price
-                                }))
-                            }));
-                        }
-                    }
-                } else {
-                    // B2C: Apply discounts to base_price
-                    const now = new Date();
-                    finalProducts = finalProducts.map(p => ({
-                        ...p,
-                        product_variants: (p.product_variants || []).map((v: any) => {
-                            const discountActive = (v.discount_percentage || 0) > 0 &&
-                                (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
-                                (!v.discount_end_date || new Date(v.discount_end_date) >= now);
-                            const finalPrice = discountActive
-                                ? v.base_price * (1 - v.discount_percentage / 100)
-                                : v.base_price;
+                // 4. Apply pricing + discounts (unified for B2B and B2C)
+                const now = new Date();
+                finalProducts = finalProducts.map(p => ({
+                    ...p,
+                    product_variants: (p.product_variants || []).map((v: any) => {
+                        if (userRole === 'b2b') {
+                            // B2B: sadece global iskonto — ana fiyatı üstü çizili göster
+                            const b2bPrice = v.base_price * (1 - b2bDiscount / 100);
                             return {
                                 ...v,
-                                price: finalPrice,
+                                price: b2bPrice,
                                 originalPrice: v.base_price,
-                                hasDiscount: discountActive,
-                                discount_percentage: v.discount_percentage || 0
+                                hasDiscount: b2bDiscount > 0,
+                                discount_percentage: b2bDiscount
                             };
-                        })
-                    }));
-                }
+                        }
+                        // B2C: kampanya indirimi uygula
+                        const discountActive = (v.discount_percentage || 0) > 0 &&
+                            (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
+                            (!v.discount_end_date || new Date(v.discount_end_date) >= now);
+                        const finalPrice = discountActive
+                            ? v.base_price * (1 - v.discount_percentage / 100)
+                            : v.base_price;
+                        return {
+                            ...v,
+                            price: finalPrice,
+                            originalPrice: v.base_price,
+                            hasDiscount: discountActive,
+                            discount_percentage: v.discount_percentage || 0
+                        };
+                    })
+                }));
 
                 setProducts(finalProducts);
             } catch (err: any) {

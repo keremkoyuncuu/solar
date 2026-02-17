@@ -10,6 +10,7 @@ interface OrderDetail {
     grand_total: number;
     status: string;
     created_at: string;
+    payment_method?: string;
     guest_name?: string;
     guest_email?: string;
     guest_phone?: string;
@@ -50,7 +51,7 @@ const AdminOrderDetail: React.FC = () => {
                 const { data, error } = await supabase
                     .from('orders')
                     .select(`
-                        id, order_no, user_id, grand_total, status, created_at,
+                        id, order_no, user_id, grand_total, status, created_at, payment_method,
                         guest_name, guest_email, guest_phone, shipping_address,
                         profiles:user_id ( email, role, phone, full_name ),
                         order_items ( id, product_name_snapshot, sku_snapshot, unit_price_snapshot, quantity, line_total )
@@ -164,6 +165,11 @@ const AdminOrderDetail: React.FC = () => {
                                         Misafir Müşteri
                                     </span>
                                 )}
+                                {order.payment_method === 'eft' && (
+                                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                        🏦 Havale/EFT
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -177,6 +183,7 @@ const AdminOrderDetail: React.FC = () => {
                                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                 >
                                     <option value="pending_payment">Ödeme Bekliyor</option>
+                                    <option value="pending_approval">Havale Onayı Bekliyor</option>
                                     <option value="paid">Ödeme Alındı</option>
                                     <option value="preparing">Hazırlanıyor</option>
                                     <option value="shipped">Kargolandı</option>

@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Logo & Description */}
                     <div>
-                        <h3 className="text-2xl font-bold text-[#f0c961] mb-4">ICEL SOLAR MARKET</h3>
+                        <img src="/logo.png" alt="İçel Solar Market" className="h-20 w-auto mb-4 brightness-110" />
                         <p className="text-gray-400 text-sm leading-relaxed">
                             Güneş enerjisi sistemleri ve enerji çözümlerinde güvenilir adresiniz.
                         </p>

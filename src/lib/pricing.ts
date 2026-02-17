@@ -18,6 +18,25 @@ export const fetchUserRole = async (): Promise<string> => {
 };
 
 /**
+ * Global B2B iskonto oranını app_settings'den çeker.
+ * Sonuç cache'lenir (sayfa içi).
+ */
+let _cachedB2BDiscount: number | null = null;
+export const fetchB2BDiscount = async (): Promise<number> => {
+    if (_cachedB2BDiscount !== null) return _cachedB2BDiscount;
+
+    const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'b2b_discount_percentage')
+        .maybeSingle();
+
+    const percentage: number = data?.value?.percentage ?? 0;
+    _cachedB2BDiscount = percentage;
+    return percentage;
+};
+
+/**
  * İndirim bilgisi interface'i
  */
 export interface PriceResult {
@@ -60,12 +79,11 @@ export const applyDiscount = (
  * Calculates the selling price for a variant based on the user's role and discount.
  * 
  * Logic:
- * 1. If role is NOT 'b2b', use basePrice.
- * 2. If role IS 'b2b', fetch active price from variant_prices.
- * 3. Apply discount if active.
+ * 1. If role is NOT 'b2b', use basePrice + campaign discount.
+ * 2. If role IS 'b2b', calculate: basePrice × (1 - b2bDiscount/100). No campaign discount.
  */
 export const calculateVariantPrice = async (
-    variantId: string,
+    _variantId: string,
     basePrice: number,
     userRole: string,
     discountPercentage: number = 0,
@@ -74,24 +92,15 @@ export const calculateVariantPrice = async (
 ): Promise<number> => {
     let price = basePrice;
 
-    // B2B özel fiyat kontrolü
     if (userRole === 'b2b') {
-        const { data: priceData } = await supabase
-            .from('variant_prices')
-            .select('price')
-            .eq('variant_id', variantId)
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        if (priceData && priceData.length > 0) {
-            price = priceData[0].price;
+        // B2B: sadece global iskonto uygulanır, kampanya indirimi YOK
+        const b2bDiscount = await fetchB2BDiscount();
+        price = basePrice * (1 - b2bDiscount / 100);
+    } else {
+        // B2C: kampanya indirimi uygula
+        if (isDiscountActive(discountPercentage, discountStartDate, discountEndDate)) {
+            price = applyDiscount(price, discountPercentage);
         }
-    }
-
-    // İndirim uygula (hem B2B hem B2C için)
-    if (isDiscountActive(discountPercentage, discountStartDate, discountEndDate)) {
-        price = applyDiscount(price, discountPercentage);
     }
 
     return price;
@@ -101,39 +110,33 @@ export const calculateVariantPrice = async (
  * Varyant için tam fiyat bilgisi döndürür (indirim detayları dahil)
  */
 export const calculateVariantPriceWithDetails = async (
-    variantId: string,
+    _variantId: string,
     basePrice: number,
     userRole: string,
     discountPercentage: number = 0,
     discountStartDate?: string | null,
     discountEndDate?: string | null
 ): Promise<PriceResult> => {
-    let originalPrice = basePrice;
-
-    // B2B özel fiyat kontrolü
     if (userRole === 'b2b') {
-        const { data: priceData } = await supabase
-            .from('variant_prices')
-            .select('price')
-            .eq('variant_id', variantId)
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        if (priceData && priceData.length > 0) {
-            originalPrice = priceData[0].price;
-        }
+        // B2B: sadece global iskonto — ana fiyatı üstü çizili göster
+        const b2bDiscount = await fetchB2BDiscount();
+        const b2bPrice = basePrice * (1 - b2bDiscount / 100);
+        return {
+            finalPrice: b2bPrice,
+            originalPrice: basePrice,
+            hasDiscount: b2bDiscount > 0,
+            discountPercentage: b2bDiscount
+        };
     }
 
-    // İndirim kontrolü
+    // B2C: kampanya indirimi uygula
     const hasDiscount = isDiscountActive(discountPercentage, discountStartDate, discountEndDate);
-    const finalPrice = hasDiscount ? applyDiscount(originalPrice, discountPercentage) : originalPrice;
+    const finalPrice = hasDiscount ? applyDiscount(basePrice, discountPercentage) : basePrice;
 
     return {
         finalPrice,
-        originalPrice,
+        originalPrice: basePrice,
         hasDiscount,
         discountPercentage: hasDiscount ? discountPercentage : 0
     };
 };
-

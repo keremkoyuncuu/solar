@@ -29,11 +29,46 @@ const FeaturedProducts: React.FC = () => {
                 }
 
                 if (data) {
-                    // Apply discounts to variants
+                    // Check user role
+                    const { data: { session } } = await supabase.auth.getSession();
+                    let userRole = 'b2c';
+                    if (session) {
+                        const { data: profile } = await supabase
+                            .from('profiles')
+                            .select('role')
+                            .eq('id', session.user.id)
+                            .maybeSingle();
+                        userRole = profile?.role || 'b2c';
+                    }
+
+                    // If B2B, fetch global discount rate
+                    let b2bDiscount = 0;
+                    if (userRole === 'b2b') {
+                        const { data: settingsData } = await supabase
+                            .from('app_settings')
+                            .select('value')
+                            .eq('key', 'b2b_discount_percentage')
+                            .maybeSingle();
+                        b2bDiscount = settingsData?.value?.percentage || 0;
+                    }
+
+                    // Apply pricing
                     const now = new Date();
                     const productsWithDiscounts = data.map((p: any) => ({
                         ...p,
                         product_variants: (p.product_variants || []).map((v: any) => {
+                            if (userRole === 'b2b') {
+                                // B2B: sadece global iskonto — ana fiyatı üstü çizili göster
+                                const b2bPrice = v.base_price * (1 - b2bDiscount / 100);
+                                return {
+                                    ...v,
+                                    price: b2bPrice,
+                                    originalPrice: v.base_price,
+                                    hasDiscount: b2bDiscount > 0,
+                                    discount_percentage: b2bDiscount
+                                };
+                            }
+                            // B2C: kampanya indirimi uygula
                             const discountActive = (v.discount_percentage || 0) > 0 &&
                                 (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
                                 (!v.discount_end_date || new Date(v.discount_end_date) >= now);

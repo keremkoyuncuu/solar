@@ -1,24 +1,30 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, Home, Phone, Mail } from 'lucide-react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { CheckCircle, Home, Phone, Mail, Clock } from 'lucide-react';
 
 const PaymentSuccess: React.FC = () => {
     const { orderNo } = useParams<{ orderNo: string }>();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const isEft = searchParams.get('method') === 'eft';
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
             <div className="max-w-2xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden">
                 {/* Success Header with gradient */}
-                <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-8 text-center">
+                <div className={`${isEft ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-green-500 to-emerald-600'} p-8 text-center`}>
                     <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <CheckCircle className="w-16 h-16 text-green-600" strokeWidth={2.5} />
+                        {isEft ? (
+                            <Clock className="w-16 h-16 text-amber-500" strokeWidth={2.5} />
+                        ) : (
+                            <CheckCircle className="w-16 h-16 text-green-600" strokeWidth={2.5} />
+                        )}
                     </div>
                     <h1 className="text-4xl font-black text-white mb-2 uppercase tracking-tight">
-                        Sipariş Alındı!
+                        {isEft ? 'Havale Bildirimi Alındı!' : 'Sipariş Alındı!'}
                     </h1>
-                    <p className="text-green-50 text-lg font-medium">
-                        Siparişiniz başarıyla oluşturuldu
+                    <p className={`${isEft ? 'text-amber-50' : 'text-green-50'} text-lg font-medium`}>
+                        {isEft ? 'Havale kontrolü sonrası siparişiniz onaylanacaktır' : 'Siparişiniz başarıyla oluşturuldu'}
                     </p>
                 </div>
 
@@ -80,18 +86,33 @@ const PaymentSuccess: React.FC = () => {
                     </div>
 
                     {/* Status Info */}
-                    <div className="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-6 mb-8">
-                        <div className="flex gap-3">
-                            <div className="text-3xl">📦</div>
-                            <div className="flex-1">
-                                <h3 className="font-bold text-gray-900 mb-2">Siparişiniz Hazırlanıyor</h3>
-                                <p className="text-sm text-gray-700 leading-relaxed">
-                                    Siparişiniz onaylandı ve en kısa sürede kargoya verilecek.
-                                    Kargo takip numaranız hazır olduğunda tarafınıza bildirilecektir.
-                                </p>
+                    {isEft ? (
+                        <div className="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-6 mb-8">
+                            <div className="flex gap-3">
+                                <div className="text-3xl">🏦</div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900 mb-2">Havale/EFT Kontrolü Bekleniyor</h3>
+                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                        Havale bildiriminiz alınmıştır. Banka hesabımıza ödemeniz ulaştıktan sonra siparişiniz onaylanacak
+                                        ve kargoya verilecektir. Bu süreç genellikle 1 iş günü içinde tamamlanır.
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="bg-amber-50 border-l-4 border-amber-500 rounded-lg p-6 mb-8">
+                            <div className="flex gap-3">
+                                <div className="text-3xl">📦</div>
+                                <div className="flex-1">
+                                    <h3 className="font-bold text-gray-900 mb-2">Siparişiniz Hazırlanıyor</h3>
+                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                        Siparişiniz onaylanı ve en kısa sürede kargoya verilecek.
+                                        Kargo takip numaranız hazır olduğunda tarafınıza bildirilecektir.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="space-y-3">

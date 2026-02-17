@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import SimilarProducts from '../components/SimilarProducts';
 import { supabase } from '../lib/supabaseClient';
 import { getOrCreateActiveCart, dispatchCartUpdate } from '../lib/cart';
-import { fetchUserRole, calculateVariantPrice } from '../lib/pricing';
+import { fetchUserRole, calculateVariantPriceWithDetails } from '../lib/pricing';
 import { useCurrency } from '../hooks/useCurrency';
 import { Star } from 'lucide-react'; // Added import
 
@@ -35,21 +35,7 @@ interface Variant {
     discount_end_date: string | null;
     hasDiscount: boolean;
 }
-// Taksit oranları
-const INSTALLMENT_OPTIONS = [
-    { count: 1, rate: 0 },
-    { count: 2, rate: 2.99 },
-    { count: 3, rate: 5.01 },
-    { count: 4, rate: 7.10 },
-    { count: 5, rate: 9.29 },
-    { count: 6, rate: 11.57 },
-    { count: 7, rate: 13.95 },
-    { count: 8, rate: 16.43 },
-    { count: 9, rate: 19.02 },
-    { count: 10, rate: 21.73 },
-    { count: 11, rate: 24.56 },
-    { count: 12, rate: 27.53 },
-];
+
 
 const ProductDetail: React.FC = () => {
     const { formatPrice } = useCurrency();
@@ -62,7 +48,7 @@ const ProductDetail: React.FC = () => {
     const [quantity, setQuantity] = useState<number>(1);
     const [activeImage, setActiveImage] = useState<string | null>(null);
     const [reviewStats, setReviewStats] = useState<{ average: number; count: number }>({ average: 0, count: 0 });
-    const [activeTab, setActiveTab] = useState<'info' | 'installment'>('info'); // Sekme durumu
+
 
     // Reset quantity when variant changes
     useEffect(() => {
@@ -145,7 +131,7 @@ const ProductDetail: React.FC = () => {
                 const userRole = await fetchUserRole();
 
                 const variantsWithPrices = await Promise.all((variantsData || []).map(async (v) => {
-                    const finalPrice = await calculateVariantPrice(
+                    const priceResult = await calculateVariantPriceWithDetails(
                         v.id,
                         v.base_price,
                         userRole,
@@ -154,18 +140,12 @@ const ProductDetail: React.FC = () => {
                         v.discount_end_date
                     );
 
-                    // İndirim aktif mi kontrol et
-                    const now = new Date();
-                    const discountActive = (v.discount_percentage || 0) > 0 &&
-                        (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
-                        (!v.discount_end_date || new Date(v.discount_end_date) >= now);
-
                     return {
                         ...v,
-                        price: finalPrice,
-                        originalPrice: v.base_price,
-                        hasDiscount: discountActive,
-                        discount_percentage: v.discount_percentage || 0
+                        price: priceResult.finalPrice,
+                        originalPrice: priceResult.originalPrice,
+                        hasDiscount: priceResult.hasDiscount,
+                        discount_percentage: priceResult.discountPercentage
                     };
                 }));
 
@@ -546,261 +526,18 @@ const ProductDetail: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Sekmeli Bölüm - Ürün Bilgisi ve Taksit Seçenekleri */}
-                {(product.description || selectedVariant) && (
+                {/* Ürün Bilgisi */}
+                {product.description && (
                     <div className="mt-12 mb-8">
-                        {/* Tab Headers */}
                         <div className="flex border-b border-gray-200">
-                            <button
-                                onClick={() => setActiveTab('info')}
-                                className={`px-6 py-3 font-bold text-sm uppercase tracking-wider transition-colors ${activeTab === 'info'
-                                    ? 'bg-[#f0c961] text-[#1a1a1a] rounded-t-lg'
-                                    : 'text-gray-500 hover:text-gray-700 bg-gray-50 rounded-t-lg mr-1'
-                                    }`}
-                            >
+                            <div className="px-6 py-3 font-bold text-sm uppercase tracking-wider bg-[#f0c961] text-[#1a1a1a] rounded-t-lg">
                                 Ürün Bilgisi
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('installment')}
-                                className={`px-6 py-3 font-bold text-sm uppercase tracking-wider transition-colors ${activeTab === 'installment'
-                                    ? 'bg-[#f0c961] text-[#1a1a1a] rounded-t-lg'
-                                    : 'text-gray-500 hover:text-gray-700 bg-gray-50 rounded-t-lg mr-1'
-                                    }`}
-                            >
-                                Taksit Seçenekleri
-                            </button>
+                            </div>
                         </div>
-
-                        {/* Tab Content */}
                         <div className="bg-white border border-t-0 border-gray-200 rounded-b-lg p-6 md:p-8">
-                            {/* Ürün Bilgisi İçeriği */}
-                            {activeTab === 'info' && product.description && (
-                                <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
-                                    {product.description}
-                                </p>
-                            )}
-
-                            {/* Taksit Seçenekleri İçeriği */}
-                            {activeTab === 'installment' && selectedVariant && (
-                                <div className="overflow-x-auto">
-                                    <p className="text-sm text-gray-500 mb-4">
-                                        Aşağıdaki tabloda {formatPrice(selectedVariant.price)} tutarındaki ürün için taksit seçenekleri gösterilmektedir.
-                                    </p>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        {/* Maximum - İş Bankası */}
-                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-[#e4007f] text-white text-center py-3">
-                                                <span className="font-bold text-lg">Maximum</span>
-                                                <div className="text-xs opacity-80">T. İş Bankası</div>
-                                            </div>
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {INSTALLMENT_OPTIONS.map((opt) => {
-                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
-                                                        const monthly = total / opt.count;
-                                                        return (
-                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
-                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
-                                                                <td className="py-2 px-3 text-right text-gray-600">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
-                                                                </td>
-                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* QNB Finansbank */}
-                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-[#7b2d82] text-white text-center py-3">
-                                                <span className="font-bold text-lg">QNB</span>
-                                                <div className="text-xs opacity-80">QNB Finansbank</div>
-                                            </div>
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {INSTALLMENT_OPTIONS.map((opt) => {
-                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
-                                                        const monthly = total / opt.count;
-                                                        return (
-                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
-                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
-                                                                <td className="py-2 px-3 text-right text-gray-600">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
-                                                                </td>
-                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* Paraf - T. Halk Bankası */}
-                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-[#00a650] text-white text-center py-3">
-                                                <span className="font-bold text-lg">Paraf</span>
-                                                <div className="text-xs opacity-80">T. Halk Bankası</div>
-                                            </div>
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {INSTALLMENT_OPTIONS.map((opt) => {
-                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
-                                                        const monthly = total / opt.count;
-                                                        return (
-                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
-                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
-                                                                <td className="py-2 px-3 text-right text-gray-600">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
-                                                                </td>
-                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    {/* İkinci Satır - 3 Banka Daha */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                                        {/* Axess - Akbank */}
-                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-[#e31e24] text-white text-center py-3">
-                                                <span className="font-bold text-lg">Axess</span>
-                                                <div className="text-xs opacity-80">Akbank</div>
-                                            </div>
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {INSTALLMENT_OPTIONS.map((opt) => {
-                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
-                                                        const monthly = total / opt.count;
-                                                        return (
-                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
-                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
-                                                                <td className="py-2 px-3 text-right text-gray-600">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
-                                                                </td>
-                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* World - Yapı Kredi */}
-                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-gradient-to-r from-[#1a1a6e] to-[#6d28d9] text-white text-center py-3">
-                                                <span className="font-bold text-lg">World</span>
-                                                <div className="text-xs opacity-80">Yapı Kredi</div>
-                                            </div>
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {INSTALLMENT_OPTIONS.map((opt) => {
-                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
-                                                        const monthly = total / opt.count;
-                                                        return (
-                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
-                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
-                                                                <td className="py-2 px-3 text-right text-gray-600">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
-                                                                </td>
-                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-
-                                        {/* Bonus Card - Garanti BBVA */}
-                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="bg-[#00aa4f] text-white text-center py-3">
-                                                <span className="font-bold text-lg">Bonus Card</span>
-                                                <div className="text-xs opacity-80">Garanti BBVA</div>
-                                            </div>
-                                            <table className="w-full text-sm">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="py-2 px-3 text-left text-gray-600 font-semibold">Taksit</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Aylık</th>
-                                                        <th className="py-2 px-3 text-right text-gray-600 font-semibold">Toplam</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {INSTALLMENT_OPTIONS.map((opt) => {
-                                                        const total = selectedVariant.price * (1 + opt.rate / 100);
-                                                        const monthly = total / opt.count;
-                                                        return (
-                                                            <tr key={opt.count} className="border-t border-gray-100 hover:bg-gray-50">
-                                                                <td className="py-2 px-3 text-gray-800">{opt.count}</td>
-                                                                <td className="py-2 px-3 text-right text-gray-600">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(monthly)}
-                                                                </td>
-                                                                <td className="py-2 px-3 text-right font-semibold text-gray-800">
-                                                                    {opt.rate === 0 ? '-' : formatPrice(total)}
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-xs text-gray-400 mt-4">
-                                        * Taksit seçenekleri bankanızın sunduğu imkanlara göre değişiklik gösterebilir.
-                                    </p>
-                                </div>
-                            )}
+                            <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">
+                                {product.description}
+                            </p>
                         </div>
                     </div>
                 )}
@@ -817,8 +554,6 @@ const ProductDetail: React.FC = () => {
                             <span className="text-gray-600 group-hover:text-white font-bold">&rarr;</span>
                         </div>
                     </Link>
-
-
                 </div>
 
                 {/* Benzer Ürünler */}
@@ -835,3 +570,4 @@ const ProductDetail: React.FC = () => {
 };
 
 export default ProductDetail;
+

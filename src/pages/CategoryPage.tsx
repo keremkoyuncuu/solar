@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import ProductCard from '../components/ProductCard';
 import type { Product } from '../components/ProductCard';
+import { ArrowUpDown } from 'lucide-react';
 
 interface Category {
     id: string; // UUID
@@ -18,9 +19,11 @@ const CategoryPage: React.FC = () => {
     const { slug } = useParams<{ slug: string }>();
     const [category, setCategory] = useState<Category | null>(null);
     const [products, setProducts] = useState<Product[]>([]);
+    const [originalProducts, setOriginalProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [allCategories, setAllCategories] = useState<Category[]>([]);
     const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+    const [sortOption, setSortOption] = useState<string>('price-asc'); // Default: Ucuzdan Pahalıya
 
     useEffect(() => {
         const fetchData = async () => {
@@ -79,63 +82,58 @@ const CategoryPage: React.FC = () => {
                     userRole = profile?.role || 'b2c';
                 }
 
-                // If B2B, Batch Fetch Prices
-                if (userRole === 'b2b' && finalProducts.length > 0) {
-                    const allVariantIds = finalProducts.flatMap(p =>
-                        (p.product_variants || []).map((v: any) => v.id)
-                    );
+                // If B2B, fetch global discount rate
+                let b2bDiscount = 0;
+                if (userRole === 'b2b') {
+                    const { data: settingsData } = await supabase
+                        .from('app_settings')
+                        .select('value')
+                        .eq('key', 'b2b_discount_percentage')
+                        .maybeSingle();
+                    b2bDiscount = settingsData?.value?.percentage || 0;
+                }
 
-                    if (allVariantIds.length > 0) {
-                        const { data: priceData } = await supabase
-                            .from('variant_prices')
-                            .select('variant_id, price')
-                            .in('variant_id', allVariantIds)
-                            .eq('is_active', true)
-                            .order('created_at', { ascending: false });
-
-                        if (priceData) {
-                            const priceMap = new Map<string, number>();
-                            priceData.forEach(p => {
-                                if (!priceMap.has(p.variant_id)) {
-                                    priceMap.set(p.variant_id, p.price);
-                                }
-                            });
-
-                            // Inject Prices
-                            finalProducts = finalProducts.map(p => ({
-                                ...p,
-                                product_variants: (p.product_variants || []).map((v: any) => ({
-                                    ...v,
-                                    price: priceMap.get(v.id) || v.base_price
-                                }))
-                            }));
-                        }
-                    }
-                } else {
-                    // B2C: Apply discounts to base_price
-                    const now = new Date();
-                    finalProducts = finalProducts.map(p => ({
-                        ...p,
-                        product_variants: (p.product_variants || []).map((v: any) => {
-                            const discountActive = (v.discount_percentage || 0) > 0 &&
-                                (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
-                                (!v.discount_end_date || new Date(v.discount_end_date) >= now);
-                            const finalPrice = discountActive
-                                ? v.base_price * (1 - v.discount_percentage / 100)
-                                : v.base_price;
+                // Apply pricing + discounts (unified for B2B and B2C)
+                const now = new Date();
+                finalProducts = finalProducts.map(p => ({
+                    ...p,
+                    product_variants: (p.product_variants || []).map((v: any) => {
+                        if (userRole === 'b2b') {
+                            const b2bPrice = v.base_price * (1 - b2bDiscount / 100);
                             return {
                                 ...v,
-                                price: finalPrice,
+                                price: b2bPrice,
                                 originalPrice: v.base_price,
-                                hasDiscount: discountActive,
-                                discount_percentage: v.discount_percentage || 0
+                                hasDiscount: b2bDiscount > 0,
+                                discount_percentage: b2bDiscount
                             };
-                        })
-                    }));
-                }
+                        }
+                        const discountActive = (v.discount_percentage || 0) > 0 &&
+                            (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
+                            (!v.discount_end_date || new Date(v.discount_end_date) >= now);
+                        const finalPrice = discountActive
+                            ? v.base_price * (1 - v.discount_percentage / 100)
+                            : v.base_price;
+                        return {
+                            ...v,
+                            price: finalPrice,
+                            originalPrice: v.base_price,
+                            hasDiscount: discountActive,
+                            discount_percentage: v.discount_percentage || 0
+                        };
+                    })
+                }));
                 // --- B2B PRICING LOGIC END ---
 
-                setProducts(finalProducts);
+                // Calculate display price for each product to make sorting easier
+                finalProducts = finalProducts.map(p => {
+                    const prices = (p.product_variants || []).map((v: any) => v.price || 0);
+                    const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
+                    return { ...p, displayPrice: minPrice };
+                });
+
+                setOriginalProducts(finalProducts);
+                // Initial setProducts will be handled by the useEffect dependent on originalProducts
 
             } catch (error) {
                 console.error("Error fetching category data:", error);
@@ -146,6 +144,38 @@ const CategoryPage: React.FC = () => {
 
         fetchData();
     }, [slug]);
+
+    // Sorting Logic
+    useEffect(() => {
+        if (originalProducts.length === 0) {
+            setProducts([]);
+            return;
+        }
+
+        let sorted = [...originalProducts];
+
+        switch (sortOption) {
+            case 'price-asc':
+                sorted.sort((a: any, b: any) => a.displayPrice - b.displayPrice);
+                break;
+            case 'price-desc':
+                sorted.sort((a: any, b: any) => b.displayPrice - a.displayPrice);
+                break;
+            case 'newest':
+                sorted.sort((a, b) => {
+                    const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                    const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                    return dateB - dateA;
+                });
+                break;
+            case 'default':
+            default:
+                // Original order (usually DB ID or as fetched)
+                break;
+        }
+
+        setProducts(sorted);
+    }, [sortOption, originalProducts]);
 
     if (loading) return <div className="min-h-[60vh] flex items-center justify-center">Yükleniyor...</div>;
     if (!category) return <div className="min-h-[60vh] flex items-center justify-center text-xl">Kategori bulunamadı.</div>;
@@ -199,14 +229,35 @@ const CategoryPage: React.FC = () => {
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                         <h1 className="text-3xl font-bold text-gray-900">{category.name}</h1>
 
-                        {/* Mobile Filter Toggle */}
-                        <button
-                            onClick={() => setIsMobileFiltersOpen(true)}
-                            className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-                            Kategoriler & Filtrele
-                        </button>
+                        <div className="flex items-center gap-4">
+                            {/* Desktop Sorting Dropdown */}
+                            <div className="relative group min-w-[180px]">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <ArrowUpDown size={14} className="text-gray-400" />
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">SIRALAMA</span>
+                                </div>
+                                <select
+                                    value={sortOption}
+                                    onChange={(e) => setSortOption(e.target.value)}
+                                    className="w-full bg-white border border-gray-200 text-gray-700 py-2 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f0c961] focus:border-transparent text-sm appearance-none cursor-pointer"
+                                    style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: `right 0.5rem center`, backgroundRepeat: `no-repeat`, backgroundSize: `1.5em 1.5em`, paddingRight: '2.5rem' }}
+                                >
+                                    <option value="price-asc">Ucuzdan Pahalıya</option>
+                                    <option value="price-desc">Pahalıdan Ucuza</option>
+                                    <option value="newest">En Yeni</option>
+                                    <option value="default">Varsayılan</option>
+                                </select>
+                            </div>
+
+                            {/* Mobile Filter Toggle */}
+                            <button
+                                onClick={() => setIsMobileFiltersOpen(true)}
+                                className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg shadow-sm text-sm font-bold text-gray-700 hover:bg-gray-50 h-[42px] mt-auto"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+                                Filtrele
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -261,6 +312,10 @@ const CategoryPage: React.FC = () => {
 
                 {/* Product Grid */}
                 <div className="lg:col-span-3">
+                    <div className="mb-4 lg:hidden flex justify-between items-center">
+                        <span className="text-sm text-gray-500">{products.length} Ürün Listelendi</span>
+                    </div>
+
                     {products.length === 0 ? (
                         <div className="bg-white rounded-xl p-12 text-center shadow-sm">
                             <h3 className="text-lg font-medium text-gray-900 mb-2">Ürün Bulunamadı</h3>

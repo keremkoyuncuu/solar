@@ -224,11 +224,8 @@ export default function Header() {
 
                         {/* Center: Logo + Search */}
                         <div className="flex items-center justify-start flex-1 gap-6">
-                            <Link to="/" className="group flex flex-col items-center hover:scale-105 transition-transform duration-300 shrink-0">
-                                <div className="flex items-baseline gap-1">
-                                    <span className="text-lg md:text-2xl font-black text-[#f0c961] italic tracking-tighter drop-shadow-sm select-none">İÇEL</span>
-                                    <span className="text-lg md:text-2xl font-black text-[#222] italic tracking-tighter select-none">SOLAR</span>
-                                </div>
+                            <Link to="/" className="group flex items-center hover:scale-105 transition-transform duration-300 shrink-0">
+                                <img src="/logo.png" alt="İçel Solar Market" className="h-20 md:h-24 w-auto" />
                             </Link>
 
                             {/* Desktop Search (Inline with Logo) */}

@@ -10,6 +10,7 @@ interface Order {
     grand_total: number;
     status: string;
     created_at: string;
+    payment_method?: string;
     guest_name?: string;
     guest_email?: string;
     profiles: {
@@ -37,6 +38,7 @@ const AdminOrders: React.FC = () => {
                         grand_total,
                         status,
                         created_at,
+                        payment_method,
                         guest_name,
                         guest_email,
                         profiles:user_id ( email, role, full_name )
@@ -83,6 +85,7 @@ const AdminOrders: React.FC = () => {
                                     <th className="p-4">Müşteri</th>
                                     <th className="p-4">Rol</th>
                                     <th className="p-4">Tarih</th>
+                                    <th className="p-4 text-center">Ödeme</th>
                                     <th className="p-4 text-center">Durum</th>
                                     <th className="p-4 text-right">Tutar</th>
                                     <th className="p-4 text-center">İşlem</th>
@@ -91,7 +94,7 @@ const AdminOrders: React.FC = () => {
                             <tbody className="divide-y divide-gray-100 text-sm">
                                 {orders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={7} className="p-8 text-center text-gray-500">Henüz sipariş bulunmuyor.</td>
+                                        <td colSpan={8} className="p-8 text-center text-gray-500">Henüz sipariş bulunmuyor.</td>
                                     </tr>
                                 ) : (
                                     orders.map((order) => (
@@ -114,6 +117,14 @@ const AdminOrders: React.FC = () => {
                                             </td>
                                             <td className="p-4 text-gray-500 text-sm">
                                                 {formatDate(order.created_at)}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <span className={`text-xs px-2 py-1 rounded-full border whitespace-nowrap ${order.payment_method === 'eft'
+                                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                                        : 'bg-sky-50 text-sky-700 border-sky-200'
+                                                    }`}>
+                                                    {order.payment_method === 'eft' ? '🏦 EFT' : '💳 Kart'}
+                                                </span>
                                             </td>
                                             <td className="p-4 text-center">
                                                 {(() => {

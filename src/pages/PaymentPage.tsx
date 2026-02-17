@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { formatCurrency } from '../utils/formatters';
-import { Shield, CheckCircle, CreditCard } from 'lucide-react';
+import { Shield, CheckCircle, CreditCard, Banknote, Copy, Check } from 'lucide-react';
 
 interface OrderDetails {
     id: string;
@@ -24,46 +24,25 @@ const PaymentPage: React.FC = () => {
     const [processing, setProcessing] = useState(false);
     const [agreementChecked, setAgreementChecked] = useState(false);
 
+    // Payment Method Tab
+    const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'eft'>('credit_card');
+    const [copied, setCopied] = useState(false);
+
+    // Bank Details for EFT
+    const BANK_INFO = {
+        bankName: 'Garanti BBVA',
+        iban: 'TR00 0000 0000 0000 0000 0000 00',
+        accountHolder: 'İçel Solar Market'
+    };
+
     // Credit Card State
     const [cardName, setCardName] = useState('');
     const [cardNumber, setCardNumber] = useState('');
     const [cardExpiry, setCardExpiry] = useState('');
     const [cardCvc, setCardCvc] = useState('');
-    const [selectedInstallment, setSelectedInstallment] = useState(1); // 1 = tek çekim
 
     // UI State
     const [formError, setFormError] = useState<string | null>(null);
-
-    // Taksit oranları (müşteriye yansıtılacak net oranlar)
-    const INSTALLMENT_RATES: Record<number, number> = {
-        1: 0,       // Tek çekim - komisyonsuz
-        2: 2.99,
-        3: 5.01,
-        4: 7.10,
-        5: 9.29,
-        6: 11.57,
-        7: 13.95,
-        8: 16.43,
-        9: 19.02,
-        10: 21.73,
-        11: 24.56,
-        12: 27.53
-    };
-
-    // Toplam tutarı hesapla (komisyon dahil)
-    const calculateTotal = () => {
-        if (!order) return 0;
-        const rate = INSTALLMENT_RATES[selectedInstallment] || 0;
-        return order.grand_total * (1 + rate / 100);
-    };
-
-    // Aylık taksit tutarını hesapla
-    const getMonthlyPayment = (installment: number) => {
-        if (!order) return 0;
-        const rate = INSTALLMENT_RATES[installment] || 0;
-        const total = order.grand_total * (1 + rate / 100);
-        return total / installment;
-    };
 
     useEffect(() => {
         fetchOrderDetails();
@@ -135,6 +114,42 @@ const PaymentPage: React.FC = () => {
         }
     }, [formData, redirectUrl]);
 
+    const copyIban = () => {
+        navigator.clipboard.writeText(BANK_INFO.iban.replace(/\s/g, ''));
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleEftSubmit = async () => {
+        setFormError(null);
+
+        if (!agreementChecked) {
+            setFormError('Lütfen Mesafeli Satış Sözleşmesi ve Ön Bilgilendirme Formunu onaylayınız.');
+            return;
+        }
+
+        setProcessing(true);
+
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .update({
+                    payment_method: 'eft',
+                    status: 'pending_approval'
+                })
+                .eq('id', orderId);
+
+            if (error) throw error;
+
+            // Navigate to success page with EFT info
+            navigate(`/payment/success/${order?.order_no}?method=eft`);
+        } catch (error: any) {
+            console.error('EFT submit error:', error);
+            setFormError(error.message || 'Havale bildirimi sırasında bir hata oluştu.');
+            setProcessing(false);
+        }
+    };
+
     const handlePayment = async () => {
         setFormError(null);
 
@@ -163,22 +178,15 @@ const PaymentPage: React.FC = () => {
         setProcessing(true);
 
         try {
-            // DEBUG: Gönderilen değerleri logla
             const paymentData = {
                 orderId: orderId,
                 cardNumber: cardNumber,
                 cardExpiry: cardExpiry,
                 cardCvc: cardCvc,
                 cardHolderName: cardName,
-                installmentCount: selectedInstallment,
-                totalAmount: calculateTotal()
+                installmentCount: 1,
+                totalAmount: order.grand_total
             };
-            console.log("=== PAYMENT DEBUG (Frontend) ===");
-            console.log("selectedInstallment:", selectedInstallment);
-            console.log("order.grand_total:", order?.grand_total);
-            console.log("calculateTotal():", calculateTotal());
-            console.log("Full payload:", paymentData);
-            console.log("=== END DEBUG ===");
 
             // Garanti 3D Secure başlat
             const response = await fetch(
@@ -279,165 +287,210 @@ const PaymentPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Payment Options */}
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            <CreditCard className="w-6 h-6 text-[#6D4C41]" />
-                            KREDİ KARTI İLE ÖDEME
-                        </h2>
-
-                        {/* Credit Card Form */}
-                        <div className="space-y-6">
-                            {/* Bank Logos / Information */}
-                            {/* Bank Logos / Information */}
-                            <div className="bg-gray-50 border border-gray-200 rounded-lg mb-6 p-4 flex flex-col items-center gap-3">
-                                <img
-                                    src="/src/assets/images/iyzico-payment-logos.png"
-                                    alt="Güvenli Ödeme"
-                                    className="h-8 object-contain"
-                                />
-                                <div className="text-sm text-gray-600 text-center">
-                                    Garanti BBVA Sanal POS güvencesi ile tüm kredi kartları ile güvenli ödeme yapabilirsiniz.
-                                </div>
-                            </div>
-
-                            <div className="grid gap-5">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Kart Üzerindeki İsim Soyisim</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300"
-                                            placeholder="ADINIZ SOYADINIZ"
-                                            value={cardName}
-                                            onChange={(e) => setCardName(e.target.value.toUpperCase())}
-                                        />
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Kart Numarası</label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300 font-mono"
-                                            placeholder="0000 0000 0000 0000"
-                                            maxLength={19}
-                                            value={cardNumber}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                                                setCardNumber(val.slice(0, 19));
-                                            }}
-                                        />
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                            <CreditCard className="w-5 h-5" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-5">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Son Kullanma Tarihi</label>
-                                        <input
-                                            type="text"
-                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300 text-center"
-                                            placeholder="AA / YY"
-                                            maxLength={5}
-                                            value={cardExpiry}
-                                            onChange={(e) => {
-                                                const val = e.target.value.replace(/\D/g, '');
-                                                if (val.length >= 2) {
-                                                    setCardExpiry(val.slice(0, 2) + '/' + val.slice(2, 4));
-                                                } else {
-                                                    setCardExpiry(val);
-                                                }
-                                            }}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
-                                            CVV / CVC
-                                            <span className="text-[10px] text-gray-400 cursor-help" title="Kartınızın arkasındaki 3 haneli kod">NEDİR?</span>
-                                        </label>
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300 text-center"
-                                                placeholder="000"
-                                                maxLength={3}
-                                                value={cardCvc}
-                                                onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                                            />
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                                <Shield className="w-4 h-4" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Taksit Seçenekleri */}
-                                <div className="mt-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-3">Taksit Seçenekleri</label>
-                                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                                        {/* Tek Çekim */}
-                                        <label
-                                            className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${selectedInstallment === 1
-                                                ? 'border-[#6D4C41] bg-[#6D4C41]/5 ring-2 ring-[#6D4C41]/20'
-                                                : 'border-gray-200 hover:border-gray-300'
-                                                }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                name="installment"
-                                                checked={selectedInstallment === 1}
-                                                onChange={() => setSelectedInstallment(1)}
-                                                className="text-[#6D4C41] focus:ring-[#6D4C41]"
-                                            />
-                                            <div className="flex-1">
-                                                <span className="text-sm font-bold text-gray-900">Tek Çekim</span>
-                                                <span className="text-xs text-green-600 ml-2">(Komisyonsuz)</span>
-                                            </div>
-                                            <span className="text-sm font-bold text-[#6D4C41]">{formatCurrency(order.grand_total)}</span>
-                                        </label>
-
-                                        {/* Taksitli Seçenekler */}
-                                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((inst) => (
-                                            <label
-                                                key={inst}
-                                                className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all ${selectedInstallment === inst
-                                                    ? 'border-[#6D4C41] bg-[#6D4C41]/5 ring-2 ring-[#6D4C41]/20'
-                                                    : 'border-gray-200 hover:border-gray-300'
-                                                    }`}
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name="installment"
-                                                    checked={selectedInstallment === inst}
-                                                    onChange={() => setSelectedInstallment(inst)}
-                                                    className="text-[#6D4C41] focus:ring-[#6D4C41]"
-                                                />
-                                                <div className="flex-1">
-                                                    <span className="text-sm font-bold text-gray-900">{inst} Taksit</span>
-                                                    <span className="text-xs text-gray-500 ml-2">
-                                                        (Aylık {formatCurrency(getMonthlyPayment(inst))})
-                                                    </span>
-                                                </div>
-                                                <div className="text-right">
-                                                    <span className="text-sm font-bold text-[#6D4C41]">
-                                                        {formatCurrency(order.grand_total * (1 + INSTALLMENT_RATES[inst] / 100))}
-                                                    </span>
-                                                    <span className="text-xs text-orange-600 block">
-                                                        +%{INSTALLMENT_RATES[inst].toFixed(2)}
-                                                    </span>
-                                                </div>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                    <div className="space-y-0">
+                        {/* Payment Method Tabs */}
+                        <div className="flex rounded-t-lg overflow-hidden border border-b-0 border-gray-200">
+                            <button
+                                onClick={() => { setPaymentMethod('credit_card'); setFormError(null); }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 text-sm font-bold transition-all ${paymentMethod === 'credit_card'
+                                    ? 'bg-white text-[#6D4C41] border-b-2 border-[#6D4C41]'
+                                    : 'bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <CreditCard className="w-5 h-5" />
+                                Kredi Kartı
+                            </button>
+                            <button
+                                onClick={() => { setPaymentMethod('eft'); setFormError(null); }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 text-sm font-bold transition-all ${paymentMethod === 'eft'
+                                    ? 'bg-white text-[#6D4C41] border-b-2 border-[#6D4C41]'
+                                    : 'bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <Banknote className="w-5 h-5" />
+                                Havale / EFT
+                            </button>
                         </div>
+
+                        {/* Credit Card Panel */}
+                        {paymentMethod === 'credit_card' && (
+                            <div className="bg-white rounded-b-lg shadow-sm p-6 border border-gray-200 border-t-0">
+                                <div className="space-y-6">
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg mb-6 p-4 flex flex-col items-center gap-3">
+                                        <img
+                                            src="/src/assets/images/iyzico-payment-logos.png"
+                                            alt="Güvenli Ödeme"
+                                            className="h-8 object-contain"
+                                        />
+                                        <div className="text-sm text-gray-600 text-center">
+                                            Garanti BBVA Sanal POS güvencesi ile tüm kredi kartları ile güvenli ödeme yapabilirsiniz.
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-5">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Kart Üzerindeki İsim Soyisim</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300"
+                                                    placeholder="ADINIZ SOYADINIZ"
+                                                    value={cardName}
+                                                    onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                                                />
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Kart Numarası</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300 font-mono"
+                                                    placeholder="0000 0000 0000 0000"
+                                                    maxLength={19}
+                                                    value={cardNumber}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                                                        setCardNumber(val.slice(0, 19));
+                                                    }}
+                                                />
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                                    <CreditCard className="w-5 h-5" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-5">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Son Kullanma Tarihi</label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300 text-center"
+                                                    placeholder="AA / YY"
+                                                    maxLength={5}
+                                                    value={cardExpiry}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '');
+                                                        if (val.length >= 2) {
+                                                            setCardExpiry(val.slice(0, 2) + '/' + val.slice(2, 4));
+                                                        } else {
+                                                            setCardExpiry(val);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center justify-between">
+                                                    CVV / CVC
+                                                    <span className="text-[10px] text-gray-400 cursor-help" title="Kartınızın arkasındaki 3 haneli kod">NEDİR?</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#6D4C41] focus:border-transparent transition-all placeholder-gray-300 text-center"
+                                                        placeholder="000"
+                                                        maxLength={3}
+                                                        value={cardCvc}
+                                                        onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                                                    />
+                                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                                        <Shield className="w-4 h-4" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Tek Çekim Bilgisi */}
+                                        <div className="mt-4">
+                                            <div className="flex items-center gap-3 p-4 border border-[#6D4C41] bg-[#6D4C41]/5 ring-2 ring-[#6D4C41]/20 rounded-lg">
+                                                <div className="flex-1">
+                                                    <span className="text-sm font-bold text-gray-900">Tek Çekim</span>
+                                                    <span className="text-xs text-green-600 ml-2">(Komisyonsuz)</span>
+                                                </div>
+                                                <span className="text-sm font-bold text-[#6D4C41]">{formatCurrency(order.grand_total)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* EFT / Havale Panel */}
+                        {paymentMethod === 'eft' && (
+                            <div className="bg-white rounded-b-lg shadow-sm p-6 border border-gray-200 border-t-0">
+                                <div className="space-y-6">
+                                    {/* Info Banner */}
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="text-amber-500 text-xl mt-0.5">ℹ️</div>
+                                            <div className="text-sm text-amber-800">
+                                                <p className="font-bold mb-1">Havale / EFT ile Ödeme</p>
+                                                <p>Aşağıdaki banka hesabımıza havale/EFT yaptıktan sonra <strong>"Havale Bildir"</strong> butonuna basınız. Ödemeniz kontrol edildikten sonra siparişiniz onaylanacaktır.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Bank Details Card */}
+                                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 text-white shadow-lg">
+                                        <div className="flex items-center gap-2 mb-5">
+                                            <Banknote className="w-5 h-5 text-gray-300" />
+                                            <span className="text-sm font-medium text-gray-300">Banka Hesap Bilgileri</span>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <div className="text-xs text-gray-400 mb-1">Banka</div>
+                                                <div className="text-lg font-bold">{BANK_INFO.bankName}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-400 mb-1">Hesap Sahibi</div>
+                                                <div className="text-lg font-bold">{BANK_INFO.accountHolder}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs text-gray-400 mb-1">IBAN</div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-base font-mono font-bold tracking-wide">{BANK_INFO.iban}</span>
+                                                    <button
+                                                        onClick={copyIban}
+                                                        className="flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs transition-all"
+                                                        title="IBAN Kopyala"
+                                                    >
+                                                        {copied ? (
+                                                            <><Check className="w-3.5 h-3.5 text-green-400" /> <span className="text-green-400">Kopyalandı</span></>
+                                                        ) : (
+                                                            <><Copy className="w-3.5 h-3.5" /> Kopyala</>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Transfer Amount */}
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm font-medium text-green-800">Gönderilecek Tutar</span>
+                                            <span className="text-xl font-bold text-green-700">{formatCurrency(order.grand_total)}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Order No Reminder */}
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-blue-500 text-lg">📋</span>
+                                            <div className="text-sm text-blue-800">
+                                                <p>Havale açıklamasına sipariş numaranızı yazınız:</p>
+                                                <p className="font-bold text-lg mt-1">#{order.order_no}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Legal Agreements */}
@@ -653,14 +706,21 @@ const PaymentPage: React.FC = () => {
 
                         {/* Payment Button */}
                         <button
-                            onClick={handlePayment}
+                            onClick={paymentMethod === 'eft' ? handleEftSubmit : handlePayment}
                             disabled={processing}
                             className={`w-full py-4 rounded-lg font-bold text-white transition-all ${!processing
-                                ? 'bg-[#6D4C41] hover:bg-[#5D4037] shadow-lg hover:shadow-xl'
+                                ? paymentMethod === 'eft'
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-xl'
+                                    : 'bg-[#6D4C41] hover:bg-[#5D4037] shadow-lg hover:shadow-xl'
                                 : 'bg-gray-400 cursor-not-allowed'
                                 }`}
                         >
-                            {processing ? 'İşleniyor...' : 'SİPARİŞİ TAMAMLA'}
+                            {processing
+                                ? 'İşleniyor...'
+                                : paymentMethod === 'eft'
+                                    ? '💸 HAVALE BİLDİR'
+                                    : 'SİPARİŞİ TAMAMLA'
+                            }
                         </button>
 
                         <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">

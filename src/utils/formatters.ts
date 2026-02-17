@@ -5,6 +5,8 @@ export const formatOrderStatus = (status: string) => {
         case 'pending':
         case 'pending_payment':
             return { label: 'Ödeme Bekliyor', color: 'bg-orange-100 text-orange-800 border-orange-200' };
+        case 'pending_approval':
+            return { label: 'Havale Onayı Bekliyor', color: 'bg-amber-100 text-amber-800 border-amber-200' };
         case 'paid':
             return { label: 'Ödeme Alındı', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
         case 'preparing':

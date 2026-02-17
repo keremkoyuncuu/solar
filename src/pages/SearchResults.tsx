@@ -31,27 +31,7 @@ const SearchResults: React.FC = () => {
                     results = data || [];
                 }
 
-                // Apply discounts helper
-                const applyDiscounts = (variants: any[]) => {
-                    const now = new Date();
-                    return variants.map((v: any) => {
-                        const discountActive = (v.discount_percentage || 0) > 0 &&
-                            (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
-                            (!v.discount_end_date || new Date(v.discount_end_date) >= now);
-                        const finalPrice = discountActive
-                            ? v.base_price * (1 - v.discount_percentage / 100)
-                            : v.base_price;
-                        return {
-                            ...v,
-                            price: finalPrice,
-                            originalPrice: v.base_price,
-                            hasDiscount: discountActive,
-                            discount_percentage: v.discount_percentage || 0
-                        };
-                    });
-                };
-
-                // Pricing Helper
+                // Pricing Helper — unified for B2B and B2C
                 const applyPricing = async (list: Product[]) => {
                     const { data: { session } } = await supabase.auth.getSession();
                     let userRole = 'b2c';
@@ -59,21 +39,46 @@ const SearchResults: React.FC = () => {
                         const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
                         userRole = profile?.role || 'b2c';
                     }
-                    if (userRole === 'b2c') return list.map(p => ({ ...p, product_variants: applyDiscounts(p.product_variants || []) }));
 
-                    // B2B
-                    const ids = list.flatMap(p => p.product_variants?.map(v => v.id) || []);
-                    if (ids.length === 0) return list;
-                    const { data: prices } = await supabase.from('variant_prices').select('variant_id, price').in('variant_id', ids).eq('is_active', true).order('created_at', { ascending: false });
-                    const priceMap = new Map();
-                    prices?.forEach(p => { if (!priceMap.has(p.variant_id)) priceMap.set(p.variant_id, p.price); });
+                    // B2B: fetch global discount rate
+                    let b2bDiscount = 0;
+                    if (userRole === 'b2b') {
+                        const { data: settingsData } = await supabase
+                            .from('app_settings')
+                            .select('value')
+                            .eq('key', 'b2b_discount_percentage')
+                            .maybeSingle();
+                        b2bDiscount = settingsData?.value?.percentage || 0;
+                    }
 
+                    const now = new Date();
                     return list.map(p => ({
                         ...p,
-                        product_variants: applyDiscounts((p.product_variants || []).map((v: any) => ({
-                            ...v,
-                            base_price: priceMap.get(v.id) || v.base_price
-                        })))
+                        product_variants: (p.product_variants || []).map((v: any) => {
+                            if (userRole === 'b2b') {
+                                const b2bPrice = v.base_price * (1 - b2bDiscount / 100);
+                                return {
+                                    ...v,
+                                    price: b2bPrice,
+                                    originalPrice: v.base_price,
+                                    hasDiscount: b2bDiscount > 0,
+                                    discount_percentage: b2bDiscount
+                                };
+                            }
+                            const discountActive = (v.discount_percentage || 0) > 0 &&
+                                (!v.discount_start_date || new Date(v.discount_start_date) <= now) &&
+                                (!v.discount_end_date || new Date(v.discount_end_date) >= now);
+                            const finalPrice = discountActive
+                                ? v.base_price * (1 - v.discount_percentage / 100)
+                                : v.base_price;
+                            return {
+                                ...v,
+                                price: finalPrice,
+                                originalPrice: v.base_price,
+                                hasDiscount: discountActive,
+                                discount_percentage: v.discount_percentage || 0
+                            };
+                        })
                     }));
                 };
 

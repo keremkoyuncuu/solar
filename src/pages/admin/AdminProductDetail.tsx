@@ -3,13 +3,6 @@ import { supabase } from '../../lib/supabaseClient';
 import { useParams, Link } from 'react-router-dom';
 import VariantModal from '../../components/admin/VariantModal';
 
-interface PriceList {
-    id: number;
-    name: string;
-    currency: string;
-    type: string; // 'b2b', 'b2c' vb.
-}
-
 interface VariantDisplay {
     id: string;
     product_name: string;
@@ -18,16 +11,15 @@ interface VariantDisplay {
     stock: number;
     base_price: number;
     is_active: boolean;
-    prices: { [key: number]: number }; // price_list_id -> price
     discount_percentage: number;
     discount_start_date: string | null;
     discount_end_date: string | null;
+    b2b_discount: number; // B2B iskonto oranı (%)
 }
 
 const AdminProductDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [variants, setVariants] = useState<VariantDisplay[]>([]);
-    const [priceLists, setPriceLists] = useState<PriceList[]>([]);
     const [productName, setProductName] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
     const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
@@ -61,20 +53,23 @@ const AdminProductDetail: React.FC = () => {
         if (!id) return;
         setLoading(true);
         try {
-            // 1. Fiyat Listelerini Çek
-            const { data: plData } = await supabase.from('price_lists').select('*').order('id');
-            setPriceLists(plData || []);
+            // 1. B2B İskonto Oranını Çek
+            const { data: settingsData } = await supabase
+                .from('app_settings')
+                .select('value')
+                .eq('key', 'b2b_discount_percentage')
+                .maybeSingle();
+            const globalB2BDiscount = settingsData?.value?.percentage || 0;
 
             // 2. Ürün Adını Çek
             const { data: productData } = await supabase.from('products').select('name').eq('id', id).single();
             setProductName(productData?.name || '');
 
-            // 3. Varyantları ve Fiyatları Çek
+            // 3. Varyantları Çek
             const { data: variantsData, error } = await supabase
                 .from('product_variants')
                 .select(`
-id, name, sku, stock, base_price, is_active, discount_percentage, discount_start_date, discount_end_date,
-    variant_prices(price, price_list_id, is_active)
+id, name, sku, stock, base_price, is_active, discount_percentage, discount_start_date, discount_end_date
         `)
                 .eq('product_id', id)
                 .order('name');
@@ -83,12 +78,6 @@ id, name, sku, stock, base_price, is_active, discount_percentage, discount_start
 
             // 4. Veriyi Formatla
             const formatted: VariantDisplay[] = (variantsData || []).map((v: any) => {
-                const pricesMap: { [key: number]: number } = {};
-                if (v.variant_prices) {
-                    v.variant_prices.forEach((vp: any) => {
-                        if (vp.is_active) pricesMap[vp.price_list_id] = vp.price;
-                    });
-                }
                 return {
                     id: v.id,
                     product_name: productData?.name || '',
@@ -97,10 +86,10 @@ id, name, sku, stock, base_price, is_active, discount_percentage, discount_start
                     stock: v.stock,
                     base_price: v.base_price,
                     is_active: v.is_active,
-                    prices: pricesMap,
                     discount_percentage: v.discount_percentage || 0,
                     discount_start_date: v.discount_start_date,
-                    discount_end_date: v.discount_end_date
+                    discount_end_date: v.discount_end_date,
+                    b2b_discount: globalB2BDiscount
                 };
             });
 
@@ -147,42 +136,39 @@ id, name, sku, stock, base_price, is_active, discount_percentage, discount_start
         }
     };
 
-    // FİYAT GÜNCELLEME (UPSERT)
-    const handlePriceChange = async (variantId: string, priceListId: number, newPrice: number) => {
-        if (newPrice < 0) return;
-        // setUpdating(variantId); // Çok fazla render tetiklememek için burayı pasif bırakabiliriz veya loading gösterebiliriz
+    // B2B FİYAT SYNC (Ana Fiyat x (1 - İskonto/100) -> variant_prices'a kaydet)
+    const syncB2BPrice = async (variantId: string, basePrice: number, b2bDiscount: number) => {
+        const b2bPrice = basePrice * (1 - b2bDiscount / 100);
         try {
-            // Upsert mantığı: Varsa güncelle, yoksa ekle
+            // B2B fiyat listesi ID=1 olarak upsert (mevcut yapı ile uyumlu)
+            // pricing.ts en son aktif fiyatı alır, price_list_id filtrelemez
             const { error } = await supabase
                 .from('variant_prices')
                 .upsert({
                     variant_id: variantId,
-                    price_list_id: priceListId,
-                    price: newPrice,
+                    price_list_id: 1, // B2B fiyat listesi
+                    price: Math.round(b2bPrice * 100) / 100,
                     is_active: true
                 }, { onConflict: 'variant_id, price_list_id' });
 
             if (error) throw error;
-
-            setVariants(prev => prev.map(v => {
-                if (v.id === variantId) {
-                    return { ...v, prices: { ...v.prices, [priceListId]: newPrice } };
-                }
-                return v;
-            }));
         } catch (e) {
-            console.error(e);
-            alert("Fiyat kaydedilemedi.");
+            console.error('B2B fiyat sync hatası:', e);
         }
     };
 
-    // BASE PRICE GÜNCELLEME
+    // BASE PRICE GÜNCELLEME + B2B Sync
     const handleBasePriceChange = async (variantId: string, val: number) => {
         if (val < 0) return;
         try {
             const { error } = await supabase.from('product_variants').update({ base_price: val }).eq('id', variantId);
             if (error) throw error;
+            const variant = variants.find(v => v.id === variantId);
             setVariants(prev => prev.map(v => v.id === variantId ? { ...v, base_price: val } : v));
+            // B2B fiyatını otomatik güncelle
+            if (variant) {
+                syncB2BPrice(variantId, val, variant.b2b_discount);
+            }
         } catch (e) {
             alert("Ana fiyat güncellenemedi");
         }
@@ -249,14 +235,12 @@ id, name, sku, stock, base_price, is_active, discount_percentage, discount_start
                                 <th className="p-3 font-bold text-gray-900 bg-[#f0c961]/20 border-l border-r border-[#f0c961]/30 w-32 text-center">
                                     Ana Fiyat (TL)
                                 </th>
-                                {priceLists.map(pl => (
-                                    <th key={pl.id} className="p-3 font-semibold text-gray-500 w-32 text-center border-r border-gray-100 last:border-0">
-                                        <div className="flex flex-col">
-                                            <span>{pl.name}</span>
-                                            <span className="text-[10px] opacity-70">({pl.currency})</span>
-                                        </div>
-                                    </th>
-                                ))}
+                                <th className="p-3 font-bold text-indigo-700 bg-indigo-50 border-l border-indigo-100 w-28 text-center">
+                                    B2B İskonto %
+                                </th>
+                                <th className="p-3 font-bold text-indigo-700 bg-indigo-50 border-r border-indigo-100 w-32 text-center">
+                                    B2B Fiyat (TL)
+                                </th>
                                 <th className="p-3 font-bold text-red-600 bg-red-50 border-l border-red-100 w-24 text-center">
                                     İndirim %
                                 </th>
@@ -304,24 +288,26 @@ id, name, sku, stock, base_price, is_active, discount_percentage, discount_start
                                         </div>
                                     </td>
 
-                                    {/* Dinamik Fiyat Inputs */}
-                                    {priceLists.map(pl => {
-                                        const currentPrice = v.prices[pl.id];
-                                        return (
-                                            <td key={pl.id} className="p-3 text-center border-r border-gray-50 last:border-0">
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    placeholder={pl.type === 'b2c' ? v.base_price.toString() : '-'}
-                                                    value={currentPrice || ''}
-                                                    onChange={(e) => handlePriceChange(v.id, pl.id, Number(e.target.value))}
-                                                    className="w-24 px-2 py-1 text-center text-gray-600 border border-gray-100 rounded focus:ring-1 focus:ring-[#f0c961] focus:border-[#f0c961] bg-gray-50/50 hover:bg-white transition-colors"
-                                                />
-                                            </td>
-                                        );
-                                    })}
+                                    {/* B2B İskonto (read-only, global ayardan gelir) */}
+                                    <td className="p-3 bg-indigo-50/30 border-l border-indigo-100/50">
+                                        <div className="flex items-center justify-center gap-1">
+                                            <span className="w-16 px-2 py-1 text-center font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded inline-block">
+                                                {v.b2b_discount}
+                                            </span>
+                                            <span className="text-indigo-400 text-xs font-bold">%</span>
+                                        </div>
+                                    </td>
 
-                                    {/* İndirim Input */}
+                                    {/* B2B Fiyat (otomatik hesaplanan, read-only) */}
+                                    <td className="p-3 bg-indigo-50/30 border-r border-indigo-100/50">
+                                        <div className="flex items-center justify-center">
+                                            <span className="w-24 px-2 py-1 text-center font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded inline-block">
+                                                {(v.base_price * (1 - v.b2b_discount / 100)).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    {/* Kampanya İndirim Input */}
                                     <td className="p-3 bg-red-50/30 border-l border-red-100/50">
                                         <div className="flex items-center justify-center gap-1">
                                             <input
