@@ -185,7 +185,7 @@ const PaymentPage: React.FC = () => {
                 cardCvc: cardCvc,
                 cardHolderName: cardName,
                 installmentCount: 1,
-                totalAmount: order.grand_total
+                totalAmount: order!.grand_total
             };
 
             // Garanti 3D Secure başlat
