@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { formatCurrency } from '../utils/formatters';
-import { Shield, CheckCircle, CreditCard, Banknote, Copy, Check } from 'lucide-react';
+import { Shield, CheckCircle, CreditCard, Banknote, Copy, Check, Globe } from 'lucide-react';
 
 interface OrderDetails {
     id: string;
@@ -25,8 +25,30 @@ const PaymentPage: React.FC = () => {
     const [agreementChecked, setAgreementChecked] = useState(false);
 
     // Payment Method Tab
-    const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'eft'>('credit_card');
+    const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'eft' | 'paytr'>('credit_card');
     const [copied, setCopied] = useState(false);
+
+    // PayTR State
+    const [paytrToken, setPaytrToken] = useState<string | null>(null);
+    const [paytrLoading, setPaytrLoading] = useState(false);
+
+    // PayTR iframeResizer script yükleme (resmi dokümantasyona uygun)
+    useEffect(() => {
+        if (paytrToken) {
+            const script = document.createElement('script');
+            script.src = 'https://www.paytr.com/js/iframeResizer.min.js';
+            script.onload = () => {
+                // @ts-ignore — iframeResizer global olarak yüklenir
+                if (typeof (window as any).iFrameResize === 'function') {
+                    (window as any).iFrameResize({}, '#paytriframe');
+                }
+            };
+            document.head.appendChild(script);
+            return () => {
+                document.head.removeChild(script);
+            };
+        }
+    }, [paytrToken]);
 
     // Bank Details for EFT
     const BANK_INFO = {
@@ -147,6 +169,39 @@ const PaymentPage: React.FC = () => {
             console.error('EFT submit error:', error);
             setFormError(error.message || 'Havale bildirimi sırasında bir hata oluştu.');
             setProcessing(false);
+        }
+    };
+
+    // PayTR ile ödeme başlat
+    const handlePayTR = async () => {
+        if (!agreementChecked) {
+            setFormError('Lütfen Mesafeli Satış Sözleşmesi ve Ön Bilgilendirme Formunu onaylayınız.');
+            return;
+        }
+        setPaytrLoading(true);
+        setFormError(null);
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/paytr-initiate`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ orderId })
+                }
+            );
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                throw new Error(data.details || data.error || 'PayTR token alınamadı');
+            }
+            setPaytrToken(data.token);
+        } catch (error: any) {
+            console.error('PayTR error:', error);
+            setFormError(error.message || 'PayTR ödeme başlatılamadı.');
+        } finally {
+            setPaytrLoading(false);
         }
     };
 
@@ -299,6 +354,16 @@ const PaymentPage: React.FC = () => {
                             >
                                 <CreditCard className="w-5 h-5" />
                                 Kredi Kartı
+                            </button>
+                            <button
+                                onClick={() => { setPaymentMethod('paytr'); setFormError(null); setPaytrToken(null); }}
+                                className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 text-sm font-bold transition-all ${paymentMethod === 'paytr'
+                                    ? 'bg-white text-[#6D4C41] border-b-2 border-[#6D4C41]'
+                                    : 'bg-gray-50 text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <Globe className="w-5 h-5" />
+                                PayTR
                             </button>
                             <button
                                 onClick={() => { setPaymentMethod('eft'); setFormError(null); }}
@@ -489,6 +554,60 @@ const PaymentPage: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* PayTR Panel */}
+                        {paymentMethod === 'paytr' && (
+                            <div className="bg-white rounded-b-lg shadow-sm p-6 border border-gray-200 border-t-0">
+                                {!paytrToken ? (
+                                    <div className="space-y-4">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                                <Shield className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                                                <div className="text-sm text-blue-800">
+                                                    <p className="font-bold mb-1">PayTR Güvenli Ödeme</p>
+                                                    <p>PayTR altyapısı ile güvenli şekilde kredi kartı veya banka kartı ile ödeme yapabilirsiniz. Kart bilgileriniz PayTR tarafından güvenli şekilde işlenir.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm font-medium text-green-800">Ödenecek Tutar</span>
+                                                <span className="text-xl font-bold text-green-700">{formatCurrency(order.grand_total)}</span>
+                                            </div>
+                                        </div>
+                                        {formError && (
+                                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+                                                {formError}
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={handlePayTR}
+                                            disabled={paytrLoading || !agreementChecked}
+                                            className="w-full bg-[#6D4C41] hover:bg-[#5D3A31] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-lg transition-all flex items-center justify-center gap-2"
+                                        >
+                                            {paytrLoading ? (
+                                                <><div className="animate-spin h-5 w-5 border-2 border-white rounded-full border-t-transparent"></div> Yükleniyor...</>
+                                            ) : (
+                                                <><Shield className="w-5 h-5" /> PayTR ile Güvenli Öde</>
+                                            )}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 text-center">
+                                            Aşağıdaki formda kart bilgilerinizi girerek ödemenizi tamamlayınız.
+                                        </div>
+                                        <iframe
+                                            src={`https://www.paytr.com/odeme/guvenli/${paytrToken}`}
+                                            id="paytriframe"
+                                            frameBorder="0"
+                                            scrolling="no"
+                                            style={{ width: '100%', minHeight: '600px', border: 'none' }}
+                                        ></iframe>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
