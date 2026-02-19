@@ -79,16 +79,17 @@ serve(async (req) => {
         }
 
         // Sipariş ürünlerini al
+        // Sipariş ürünlerini al
         const { data: orderItems } = await supabaseClient
             .from("order_items")
-            .select("product_name, quantity, unit_price")
+            .select("product_name_snapshot, quantity, unit_price_snapshot")
             .eq("order_id", orderId);
 
         // User basket JSON oluştur (PayTR formatı)
         // PayTR PHP örneği: [["Ürün adı", "18.00", 1]] — fiyat string, adet number
         const userBasket = (orderItems || []).map(item => [
-            sanitizeTurkish(item.product_name || "Urun"),
-            (item.unit_price || 0).toFixed(2),
+            sanitizeTurkish(item.product_name_snapshot || "Urun"),
+            (item.unit_price_snapshot || 0).toFixed(2),
             item.quantity || 1
         ]);
         const userBasketJson = JSON.stringify(userBasket);
