@@ -64,7 +64,24 @@ export const getOrCreateActiveCart = async (userId?: string): Promise<string | n
 
                     // 2. If no active cart, but constraint failed, there must be an inactive/converted cart. Delete it.
                     console.log("Collision with inactive cart detected. Cleaning up...");
-                    await supabase.from('carts').delete().eq('profile_id', userId);
+
+                    // Find ANY cart for this profile to delete it properly
+                    // logic: the error means a cart exists for this profile_id. Find it.
+                    const { data: zombieCart } = await supabase
+                        .from('carts')
+                        .select('id')
+                        .eq('profile_id', userId)
+                        .maybeSingle(); // unique constraint ensures at most one exists
+
+                    if (zombieCart) {
+                        // Delete items first to avoid FK constraint error
+                        await supabase.from('cart_items').delete().eq('cart_id', zombieCart.id);
+                        // Delete the cart
+                        await supabase.from('carts').delete().eq('id', zombieCart.id);
+                    } else {
+                        // Just in case we can't find it but error persists (weird state), try raw delete by profile
+                        await supabase.from('carts').delete().eq('profile_id', userId);
+                    }
 
                     // 3. Retry insert
                     const { data: finalCart, error: finalError } = await supabase
