@@ -49,8 +49,9 @@ export const getOrCreateActiveCart = async (userId?: string): Promise<string | n
                 .single();
 
             if (insertError) {
-                // Handle race condition
+                // Handle race condition OR existing inactive cart blocking unique constraint
                 if (insertError.code === '23505') {
+                    // 1. Check if active cart exists (race condition)
                     const { data: retryCart } = await supabase
                         .from('carts')
                         .select('id')
@@ -59,6 +60,20 @@ export const getOrCreateActiveCart = async (userId?: string): Promise<string | n
                         .maybeSingle();
 
                     if (retryCart) return retryCart.id;
+
+                    // 2. If no active cart, but constraint failed, there must be an inactive/converted cart. Delete it.
+                    console.log("Collision with inactive cart detected. Cleaning up...");
+                    await supabase.from('carts').delete().eq('profile_id', userId);
+
+                    // 3. Retry insert
+                    const { data: finalCart, error: finalError } = await supabase
+                        .from('carts')
+                        .insert({ profile_id: userId, status: 'active', is_guest: false })
+                        .select('id')
+                        .single();
+
+                    if (finalCart) return finalCart.id;
+                    if (finalError) throw finalError;
                 }
 
                 console.error("Cart insert error:", insertError);

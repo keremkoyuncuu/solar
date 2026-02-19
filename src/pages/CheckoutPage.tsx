@@ -380,11 +380,9 @@ const CheckoutPage: React.FC = () => {
             const { error: itemsError } = await supabase.from('order_items').insert(itemsPayload);
             if (itemsError) throw itemsError;
 
-            // CLOSE CART
-            await supabase
-                .from('carts')
-                .update({ status: 'converted', updated_at: new Date().toISOString() })
-                .eq('id', activeCart.id);
+            // CLOSE CART (DELETE IT) to free up unique constraint
+            await supabase.from('cart_items').delete().eq('cart_id', activeCart.id);
+            await supabase.from('carts').delete().eq('id', activeCart.id);
 
             if (isGuest) {
                 localStorage.removeItem('guest_session_id');

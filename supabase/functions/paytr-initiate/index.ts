@@ -85,12 +85,14 @@ serve(async (req) => {
             .eq("order_id", orderId);
 
         // User basket JSON oluştur (PayTR formatı)
+        // PayTR PHP örneği: [["Ürün adı", "18.00", 1]] — fiyat string, adet number
         const userBasket = (orderItems || []).map(item => [
             sanitizeTurkish(item.product_name || "Urun"),
-            (item.unit_price || 0).toFixed(2), // TL cinsinden string (PayTR dokümantasyonuna göre)
-            (item.quantity || 1).toString()
+            (item.unit_price || 0).toFixed(2),
+            item.quantity || 1
         ]);
-        const userBasketStr = base64Encode(new TextEncoder().encode(JSON.stringify(userBasket)));
+        const userBasketJson = JSON.stringify(userBasket);
+        const userBasketStr = btoa(unescape(encodeURIComponent(userBasketJson)));
 
         // IP adresi
         const forwardedFor = req.headers.get("x-forwarded-for") || "";
