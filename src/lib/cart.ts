@@ -50,7 +50,8 @@ export const getOrCreateActiveCart = async (userId?: string): Promise<string | n
 
             if (insertError) {
                 // Handle race condition OR existing inactive cart blocking unique constraint
-                if (insertError.code === '23505') {
+                // Check for formatted 23505 OR generic 409 conflict
+                if (insertError.code === '23505' || insertError.code === '409' || insertError.message?.includes('duplicate')) {
                     // 1. Check if active cart exists (race condition)
                     const { data: retryCart } = await supabase
                         .from('carts')
@@ -198,7 +199,7 @@ export const mergeGuestCartToUser = async (userId: string): Promise<void> => {
             await supabase.from('carts').delete().eq('id', guestCart.id);
         } else {
             // No user cart - convert guest cart to user cart
-            await supabase
+            const { error: updateError } = await supabase
                 .from('carts')
                 .update({
                     profile_id: userId,
@@ -206,6 +207,18 @@ export const mergeGuestCartToUser = async (userId: string): Promise<void> => {
                     is_guest: false
                 })
                 .eq('id', guestCart.id);
+
+            if (updateError) {
+                // Conflict? User might have a non-active cart that is blocking this update
+                console.warn("Error converting guest cart to user cart:", updateError);
+
+                // If conflict, we can't convert. 
+                // Strategy: Delete the conflicting user cart (if not active/important) or just delete this guest cart and start fresh?
+                // Safer: Delete this guest cart's items and the cart itself, user starts with empty/new cart to avoid error loop.
+                console.log("Conflict detected during merge. improved cleanup...");
+                await supabase.from('cart_items').delete().eq('cart_id', guestCart.id);
+                await supabase.from('carts').delete().eq('id', guestCart.id);
+            }
         }
 
         // Clear guest session
