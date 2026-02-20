@@ -119,8 +119,8 @@ serve(async (req) => {
         const noInstallment = "1"; // Taksit yok
         const maxInstallment = "0"; // Maksimum taksit sayısı (0 = tek çekim)
         const currency = "TL";
-        const testMode = "1"; // TEST MODU AÇIK
-        const debugOn = "1"; // Debug açık (test süresince)
+        const testMode = "0"; // Canlı mod açık ("1" = Test)
+        const debugOn = "0"; // Canlı ortamda debug kapalı
         const timeoutLimit = "30"; // 30 dakika timeout
         const lang = "tr";
 
